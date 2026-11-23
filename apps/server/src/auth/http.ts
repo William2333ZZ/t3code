@@ -515,7 +515,21 @@ export const layer = HttpApiBuilder.group(
                 return yield* failEnvironmentScopeRequired(delegatedScope);
               }
             }
-            return yield* serverAuth.issuePairingCredential(args.payload);
+            // A device paired by someone who has a name is theirs, so nobody pairs as someone else.
+            if (
+              session.person !== undefined &&
+              args.payload.person !== undefined &&
+              args.payload.person !== session.person
+            ) {
+              return yield* new EnvironmentHttpForbiddenError({
+                message: `You are paired as ${session.person} and can only pair your own devices.`,
+              });
+            }
+            return yield* serverAuth.issuePairingCredential(
+              session.person === undefined
+                ? args.payload
+                : { ...args.payload, person: session.person },
+            );
           },
           Effect.catchIf(EnvironmentAuth.isServerAuthInternalError, (error) =>
             failEnvironmentInternal("pairing_credential_issuance_failed", error),

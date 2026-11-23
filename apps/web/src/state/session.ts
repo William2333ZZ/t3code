@@ -125,3 +125,24 @@ export function useEnvironmentSessionState(environmentId: EnvironmentId | null) 
     isPending: result.waiting,
   };
 }
+
+const environmentPersonsAtom = Atom.family((idsKey: string) => {
+  const ids = idsKey === "" ? [] : (idsKey.split("\n") as EnvironmentId[]);
+  const statesAtom = environmentSessionStatesAtom(idsKey);
+  return Atom.make((get): ReadonlyMap<EnvironmentId, string> => {
+    const states = get(statesAtom);
+    return new Map(
+      ids.flatMap((id, index) => {
+        const person = AsyncResult.getOrElse(states[index]!, () => null)?.person;
+        return person === undefined ? [] : [[id, person] as const];
+      }),
+    );
+  }).pipe(Atom.withLabel(`web-environment-persons:${idsKey}`));
+});
+
+/** Who this client is paired as, on each environment that names its people. */
+export function useEnvironmentPersons(
+  environmentIds: ReadonlyArray<EnvironmentId>,
+): ReadonlyMap<EnvironmentId, string> {
+  return useAtomValue(environmentPersonsAtom(environmentIdsKey(environmentIds)));
+}

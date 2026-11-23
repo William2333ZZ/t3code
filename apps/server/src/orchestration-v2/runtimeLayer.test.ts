@@ -971,6 +971,66 @@ it.layer(layerProjectDeletionTest)("project deletion during thread commands", (i
     }),
   );
 
+  it.effect("a thread belongs to whoever started it, and a fork to whoever forked", () =>
+    Effect.gen(function* () {
+      const projects = yield* ProjectService.ProjectService;
+      const orchestrator = yield* Orchestrator.OrchestratorV2;
+      const projectId = ProjectId.make("runtime-thread-owner");
+      const sourceId = ThreadId.make("runtime-thread-owner-source");
+      yield* projects.create({
+        commandId: CommandId.make("runtime-thread-owner-project"),
+        projectId,
+        title: "Thread owners",
+        workspaceRoot: "/work/thread-owners",
+      });
+      yield* orchestrator.dispatch({
+        type: "thread.create",
+        commandId: CommandId.make("runtime-thread-owner-create"),
+        createdBy: "user",
+        creationSource: "web",
+        threadId: sourceId,
+        projectId,
+        title: "Alice's work",
+        modelSelection,
+        runtimeMode: "full-access",
+        interactionMode: "default",
+        branch: null,
+        worktreePath: null,
+        owner: { person: "alice" },
+      });
+      const forks = [
+        // Bob forks it: his. A session that is no one's forks it: no one's.
+        { name: "bob", createdBy: "user", owner: { person: "bob" }, expected: { person: "bob" } },
+        { name: "nobody", createdBy: "user", owner: undefined, expected: undefined },
+        // An agent working for Alice forks it: still hers.
+        { name: "agent", createdBy: "agent", owner: undefined, expected: { person: "alice" } },
+      ] as const;
+      for (const fork of forks) {
+        const targetThreadId = ThreadId.make(`runtime-thread-owner-fork-${fork.name}`);
+        yield* orchestrator.dispatch({
+          type: "thread.fork",
+          commandId: CommandId.make(`runtime-thread-owner-fork-${fork.name}`),
+          sourceThreadId: sourceId,
+          targetThreadId,
+          sourcePoint: { type: "latest_stable" },
+          sideChat: true,
+          createdBy: fork.createdBy,
+          creationSource: "web",
+          ...(fork.owner === undefined ? {} : { owner: fork.owner }),
+        });
+        assert.deepEqual(
+          (yield* orchestrator.getThreadProjection(targetThreadId)).thread.owner,
+          fork.expected,
+          fork.name,
+        );
+      }
+      const shell = yield* orchestrator.getShellSnapshot();
+      assert.deepEqual(shell.threads.find((thread) => thread.id === sourceId)?.owner, {
+        person: "alice",
+      });
+    }),
+  );
+
   it.effect(
     "deletes a side chat with its parent only after the side chat's in-flight command",
     () =>
@@ -3794,8 +3854,21 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
           step,
         );
       }
+      for (const [step, person, expected] of [
+        ["give", "alice", { person: "alice" }],
+        ["hand-on", "bob", { person: "bob" }],
+        ["release", null, undefined],
+      ] as const) {
+        yield* orchestrator.dispatch({
+          type: "thread.owner.set",
+          commandId: CommandId.make(`runtime-layer-lifecycle-owner-${step}`),
+          threadId,
+          person,
+        });
+        assert.deepEqual(shellOf(yield* orchestrator.getShellSnapshot()).owner, expected, step);
+      }
       const taggedShell = shellOf(yield* orchestrator.getShellSnapshot());
-      // Tags are not activity, so the thread keeps its place in thread lists.
+      // Tags and owners are not activity, so the thread keeps its place in thread lists.
       assert.equal(
         DateTime.toEpochMillis(taggedShell.updatedAt),
         DateTime.toEpochMillis(untaggedShell.updatedAt),

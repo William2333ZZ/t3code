@@ -43,6 +43,7 @@ import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as ServerConfig from "../config.ts";
 import * as EnvironmentAuthPolicy from "./EnvironmentAuthPolicy.ts";
 import * as PairingGrantStore from "./PairingGrantStore.ts";
+import * as PersonBindings from "./PersonBindings.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
 import { REUSABLE_DEV_SESSION_EXPIRES_AT, resolveReusableDevAuth } from "./ReusableDevAuth.ts";
@@ -68,6 +69,7 @@ export interface IssuedPairingLink {
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly subject: string;
   readonly label?: string;
+  readonly person?: string;
   readonly createdAt: DateTime.Utc;
   readonly expiresAt: DateTime.Utc;
 }
@@ -112,6 +114,8 @@ export interface AuthenticatedSession {
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly proofKeyThumbprint?: string;
   readonly expiresAt?: DateTime.DateTime;
+  /** Whose session this is, where several people share the environment. */
+  readonly person?: string;
 }
 
 const serverAuthInternalErrorContext = {
@@ -537,6 +541,7 @@ export class EnvironmentAuth extends Context.Service<
     readonly createPairingLink: (input?: {
       readonly ttl?: Duration.Duration;
       readonly label?: string;
+      readonly person?: string;
       readonly scopes?: ReadonlyArray<AuthEnvironmentScope>;
       readonly subject?: string;
       readonly proofKeyThumbprint?: string;
@@ -596,6 +601,7 @@ export class EnvironmentAuth extends Context.Service<
       readonly subject?: string;
       readonly scopes?: ReadonlyArray<AuthEnvironmentScope>;
       readonly label?: string;
+      readonly person?: string;
     }) => Effect.Effect<IssuedBearerSession, ServerAuthInternalError>;
     readonly listSessions: () => Effect.Effect<
       ReadonlyArray<AuthClientSession>,
@@ -809,8 +815,24 @@ export const make = Effect.gen(function* () {
   const policy = yield* EnvironmentAuthPolicy.EnvironmentAuthPolicy;
   const bootstrapCredentials = yield* PairingGrantStore.PairingGrantStore;
   const sessions = yield* SessionStore.SessionStore;
+  const people = yield* PersonBindings.PersonBindings;
   const secretStore = yield* ServerSecretStore.ServerSecretStore;
   const digest = yield* Digest.Digest;
+  const withPerson = <S extends AuthenticatedSession>(session: S) =>
+    people
+      .get("session", session.sessionId)
+      .pipe(Effect.map((person): S => (person === undefined ? session : { ...session, person })));
+  /** A session paired through a person's link is that person's. */
+  const bindSessionToLinkPerson = Effect.fnUntraced(function* (
+    sessionId: AuthSessionId,
+    grant: Pick<PairingGrantStore.BootstrapGrant, "pairingLinkId">,
+  ) {
+    const person =
+      grant.pairingLinkId === undefined
+        ? undefined
+        : yield* people.get("pairing-link", grant.pairingLinkId);
+    if (person !== undefined) yield* people.bind("session", sessionId, person);
+  });
   const descriptor = yield* policy.getDescriptor();
   const config = yield* ServerConfig.ServerConfig;
   const managedPolicy = yield* ManagedPolicy.ManagedPolicy;
@@ -842,6 +864,7 @@ export const make = Effect.gen(function* () {
         ...(session.proofKeyThumbprint ? { proofKeyThumbprint: session.proofKeyThumbprint } : {}),
         ...(session.expiresAt ? { expiresAt: session.expiresAt } : {}),
       })),
+      Effect.flatMap(withPerson),
     );
 
   const resolveRequestCredential = (request: HttpServerRequest.HttpServerRequest) => {
@@ -929,6 +952,7 @@ export const make = Effect.gen(function* () {
             ...authScopeResponse(session.scopes),
             sessionMethod: session.method,
             ...(session.expiresAt ? { expiresAt: DateTime.toUtc(session.expiresAt) } : {}),
+            ...(session.person === undefined ? {} : { person: session.person }),
           }) satisfies AuthSessionState,
       ),
       Effect.catchIf(isServerAuthCredentialError, () =>
@@ -991,6 +1015,7 @@ export const make = Effect.gen(function* () {
         },
       })
       .pipe(Effect.mapError((cause) => new ServerAuthAuthenticatedSessionIssueError({ cause })));
+    yield* bindSessionToLinkPerson(session.sessionId, grant);
     return {
       response: {
         authenticated: true,
@@ -1004,7 +1029,7 @@ export const make = Effect.gen(function* () {
 
   type ResolvedBootstrapGrant = Pick<
     PairingGrantStore.BootstrapGrant,
-    "scopes" | "subject" | "label"
+    "scopes" | "subject" | "label" | "pairingLinkId"
   > & {
     readonly method: PairingGrantStore.BootstrapGrant["method"] | "reusable-dev-token";
   };
@@ -1157,6 +1182,7 @@ export const make = Effect.gen(function* () {
                 Effect.mapError(
                   (cause) => new ServerAuthAuthenticatedAccessTokenIssueError({ cause }),
                 ),
+                Effect.tap((session) => bindSessionToLinkPerson(session.sessionId, grant)),
               );
           }),
         ),
@@ -1171,6 +1197,7 @@ export const make = Effect.gen(function* () {
     id: issued.id,
     credential: issued.credential,
     ...(issued.label ? { label: issued.label } : {}),
+    ...(issued.person ? { person: issued.person } : {}),
     expiresAt: issued.expiresAt,
   });
 
@@ -1187,12 +1214,16 @@ export const make = Effect.gen(function* () {
         ...(input?.mcpApproval ? { mcpApproval: input.mcpApproval } : {}),
         ...(input?.requiresConnectApproval ? { requiresConnectApproval: true } : {}),
       });
+      if (input?.person !== undefined) {
+        yield* people.bind("pairing-link", issued.id, input.person);
+      }
       return {
         id: issued.id,
         credential: issued.credential,
         scopes: input?.scopes ?? AuthStandardClientScopes,
         subject: input?.subject ?? "one-time-token",
         ...(issued.label ? { label: issued.label } : {}),
+        ...(input?.person ? { person: input.person } : {}),
         createdAt: DateTime.toUtc(createdAt),
         expiresAt: DateTime.toUtc(issued.expiresAt),
       } satisfies IssuedPairingLink;
@@ -1215,6 +1246,16 @@ export const make = Effect.gen(function* () {
 
   const listPairingLinks: EnvironmentAuth["Service"]["listPairingLinks"] = (input) =>
     bootstrapCredentials.listActive().pipe(
+      Effect.flatMap((links) =>
+        people.list("pairing-link").pipe(
+          Effect.map((persons) =>
+            links.map((link) => {
+              const person = persons.get(link.id);
+              return person === undefined ? link : { ...link, person };
+            }),
+          ),
+        ),
+      ),
       Effect.map((pairingLinks) => {
         const excludedSubjects = input?.excludeSubjects ?? [
           INTERNAL_ADMINISTRATIVE_BOOTSTRAP_SUBJECT,
@@ -1359,6 +1400,11 @@ export const make = Effect.gen(function* () {
               expiresAt: DateTime.toUtc(issued.expiresAt),
             }) satisfies IssuedBearerSession,
         ),
+        Effect.tap((issued) =>
+          input?.person === undefined
+            ? Effect.void
+            : people.bind("session", issued.sessionId, input.person),
+        ),
         Effect.mapError((cause) => new ServerAuthSessionTokenIssueError({ cause })),
         Effect.withSpan("EnvironmentAuth.issueSession"),
       );
@@ -1392,6 +1438,7 @@ export const make = Effect.gen(function* () {
           ? `${PEER_LINK_PAIRING_SUBJECT_PREFIX}${input.access}`
           : "one-time-token",
       ...(input?.label ? { label: input.label } : {}),
+      ...(input?.person ? { person: input.person } : {}),
       ...(input?.access && input.purpose !== "peer-link" ? { mcpApproval: input.access } : {}),
     }).pipe(
       Effect.map((issued) => ({
@@ -1433,13 +1480,17 @@ export const make = Effect.gen(function* () {
     };
 
   const listClientSessions: EnvironmentAuth["Service"]["listClientSessions"] = (currentSessionId) =>
-    listSessions().pipe(
-      Effect.map((clientSessions) =>
-        clientSessions.map((clientSession): AuthClientSession => ({
-          ...clientSession,
-          ...authScopeResponse(clientSession.scopes),
-          current: clientSession.sessionId === currentSessionId,
-        })),
+    Effect.zip(listSessions(), people.list("session")).pipe(
+      Effect.map(([clientSessions, persons]) =>
+        clientSessions.map((clientSession): AuthClientSession => {
+          const person = persons.get(clientSession.sessionId);
+          return {
+            ...clientSession,
+            ...authScopeResponse(clientSession.scopes),
+            current: clientSession.sessionId === currentSessionId,
+            ...(person === undefined ? {} : { person }),
+          };
+        }),
       ),
       Effect.withSpan("EnvironmentAuth.listClientSessions"),
     );
@@ -1570,7 +1621,7 @@ export const make = Effect.gen(function* () {
               Effect.provideService(Digest.Digest, digest),
             );
           }
-          return {
+          return yield* withPerson({
             sessionId: session.sessionId,
             subject: session.subject,
             method: session.method,
@@ -1579,7 +1630,7 @@ export const make = Effect.gen(function* () {
               ? { proofKeyThumbprint: session.proofKeyThumbprint }
               : {}),
             ...(session.expiresAt ? { expiresAt: session.expiresAt } : {}),
-          };
+          });
         }
       }
 
@@ -1808,6 +1859,7 @@ const revokePairedClientsThePolicyDisallows = Effect.fn(
 });
 
 export const layer = Layer.effect(EnvironmentAuth, make).pipe(
+  Layer.provideMerge(PersonBindings.layer),
   Layer.provideMerge(PairingGrantStore.layer),
   Layer.provideMerge(SessionStore.layer),
   Layer.provideMerge(EnvironmentAuthPolicy.layer),

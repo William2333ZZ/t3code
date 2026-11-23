@@ -81,12 +81,17 @@ export type ThreadManagementSendMode = "auto" | "queue" | "steer" | "restart";
 export interface ThreadManagementProvenance {
   readonly createdBy: OrchestrationV2Actor;
   readonly creationSource: OrchestrationV2CreationSource;
+  /** The person the sending session belongs to. Leave out when the caller already set the owner. */
+  readonly person?: string | undefined;
 }
 
 export function withCreationProvenance(
   command: OrchestrationV2Command,
   provenance: ThreadManagementProvenance,
 ): OrchestrationV2Command {
+  const { person, ...creation } = provenance;
+  // Like a link's origin, an owner comes from the session and never from the client's command.
+  const sessionOwner = person === undefined ? {} : { owner: { person } };
   switch (command.type) {
     case "thread.create": {
       // Only the server stamps a link's origin or folds in a first message, so a client cannot.
@@ -95,15 +100,19 @@ export function withCreationProvenance(
         delegatedFrom: _delegatedFrom,
         initialMessage: _initialMessage,
         workflowRun: _workflowRun,
+        owner: _owner,
         ...rest
       } = command;
-      return { ...rest, ...provenance };
+      return { ...rest, ...creation, ...sessionOwner };
+    }
+    case "thread.fork": {
+      const { owner: _owner, ...rest } = command;
+      return { ...rest, ...creation, ...sessionOwner };
     }
     case "message.dispatch":
-    case "thread.fork":
     case "thread.merge_back":
     case "delegated_task.request":
-      return { ...command, ...provenance };
+      return { ...command, ...creation };
     default:
       return command;
   }

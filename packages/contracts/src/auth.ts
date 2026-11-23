@@ -8,6 +8,7 @@ import {
   ClientWebDeployment,
   TrimmedNonEmptyString,
 } from "./baseSchemas.ts";
+import { PersonName } from "./person.ts";
 import { RuntimeMode } from "./providerPolicy.ts";
 
 export const ServerAuthPolicy = Schema.Literals([
@@ -327,6 +328,7 @@ export const AuthPairingCredentialResult = Schema.Struct({
   id: TrimmedNonEmptyString,
   credential: TrimmedNonEmptyString,
   label: Schema.optionalKey(TrimmedNonEmptyString),
+  person: Schema.optionalKey(Schema.String),
   expiresAt: Schema.DateTimeUtc,
   purpose: Schema.optionalKey(Schema.Literal("peer-link")),
   /** Set when the code approves one agent sign-in at this level. Older servers omit it. */
@@ -372,6 +374,8 @@ export const AuthPairingLink = Schema.Struct({
   ...authScopeResponseFields,
   subject: TrimmedNonEmptyString,
   label: Schema.optionalKey(TrimmedNonEmptyString),
+  /** Whose device this link pairs, on an environment several people share. */
+  person: Schema.optionalKey(Schema.String),
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,
   /** Set while a T3 Connect device waits for approval. Older servers never send it. */
@@ -394,6 +398,7 @@ export const AuthClientSession = Schema.Struct({
   ...authScopeResponseFields,
   method: ServerAuthSessionMethod,
   client: AuthClientMetadata,
+  person: Schema.optionalKey(Schema.String),
   issuedAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,
   lastConnectedAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -513,6 +518,8 @@ export type AuthRevokeConnectDeviceResult = typeof AuthRevokeConnectDeviceResult
 
 const pairingCredentialFields = {
   label: Schema.optionalKey(TrimmedNonEmptyString),
+  /** Whose device the link pairs. A session that has a person can only name that person. */
+  person: Schema.optionalKey(PersonName),
   scopes: Schema.optionalKey(AuthGrantScopes),
 };
 
@@ -537,6 +544,8 @@ export const AuthSessionState = Schema.Struct({
   permissions: authScopeResponseFields.permissions,
   sessionMethod: Schema.optionalKey(ServerAuthSessionMethod),
   expiresAt: Schema.optionalKey(Schema.DateTimeUtc),
+  /** Who this session belongs to. Absent for the environment's own sessions and older servers. */
+  person: Schema.optionalKey(Schema.String),
 });
 export type AuthSessionState = typeof AuthSessionState.Type;
 

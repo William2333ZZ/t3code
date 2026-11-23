@@ -320,6 +320,12 @@ function SidebarThreadTooltip({
             <div className="min-w-0 truncate text-foreground/75">{environmentLabel}</div>
           </div>
         ) : null}
+        {thread.owner ? (
+          <div className="flex min-w-0 items-center gap-2">
+            <UserRoundIcon className="size-3 shrink-0 stroke-muted-foreground" />
+            <div className="min-w-0 truncate text-foreground/75">{thread.owner}</div>
+          </div>
+        ) : null}
         {thread.branch ? (
           <div className="flex min-w-0 items-center gap-2">
             <GitBranchIcon className="size-3 shrink-0 stroke-muted-foreground" />
@@ -1263,6 +1269,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
   // Only the trailing icons would remain, so the row moves them to the title line instead.
   const metaLineEmpty =
     props.environmentLabel === null &&
+    thread.owner === null &&
     prBadge === null &&
     issueBadge === null &&
     diff === null &&
@@ -1281,6 +1288,11 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
       ) : (
         <span className="flex-1" />
       )}
+      {thread.owner !== null ? (
+        <span className="max-w-24 shrink-0 truncate" data-testid="thread-owner">
+          @{thread.owner}
+        </span>
+      ) : null}
       {terminalStatusIcon}
       {prBadge}
       {issueBadge}

@@ -12,6 +12,7 @@ import {
   type OrchestrationV2DelegatedFrom,
   type OrchestrationV2WorkflowOrigin,
   type OrchestrationV2LinkOrigin,
+  type OrchestrationV2ThreadOwner,
   type OrchestrationV2ProviderThreadNativeMetadata,
   type OrchestrationV2ThreadProjection,
   type ProviderDriverKind,
@@ -121,6 +122,8 @@ export interface ThreadLaunchInput {
   };
   readonly createdBy: OrchestrationV2Actor;
   readonly creationSource: OrchestrationV2CreationSource;
+  /** The person this thread's work is for. */
+  readonly owner?: OrchestrationV2ThreadOwner | undefined;
   /** The linked environment this launch is for, if one asked for it. */
   readonly linkOrigin?: OrchestrationV2LinkOrigin;
   /** The parent there, when that environment's agent delegated this as a task. */
@@ -1496,6 +1499,7 @@ const make = Effect.gen(function* () {
                   ? {}
                   : { importedNativeThread: input.importedNativeThread }),
                 ...(input.linkOrigin === undefined ? {} : { linkOrigin: input.linkOrigin }),
+                ...(input.owner === undefined ? {} : { owner: input.owner }),
                 ...(input.delegatedFrom === undefined
                   ? {}
                   : { delegatedFrom: input.delegatedFrom }),

@@ -3,6 +3,7 @@ import {
   AuthStandardClientScopes,
   ExecutionEnvironmentDescriptor,
   ORCHESTRATION_PROTOCOL_VERSION,
+  PersonName,
   PortSchema,
 } from "@t3tools/contracts";
 import { resolveWorktreeT3Home } from "@t3tools/shared/devHome";
@@ -483,6 +484,7 @@ const mintPairingLink = Effect.fn("pair.mintPairingLink")(function* (input: {
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly ttl: Option.Option<Duration.Duration>;
   readonly label: Option.Option<string>;
+  readonly person: Option.Option<string>;
 }) {
   return yield* Effect.gen(function* () {
     const environmentAuth = yield* EnvironmentAuth.EnvironmentAuth;
@@ -490,6 +492,7 @@ const mintPairingLink = Effect.fn("pair.mintPairingLink")(function* (input: {
       scopes: input.scopes,
       subject: "one-time-token",
       label: Option.getOrElse(input.label, () => "t3 pair"),
+      ...(Option.isSome(input.person) ? { person: input.person.value } : {}),
       ...(Option.isSome(input.ttl) ? { ttl: input.ttl.value } : {}),
     });
   }).pipe(
@@ -506,6 +509,14 @@ const ttlFlag = Flag.String("ttl").pipe(
   Flag.withSchema(DurationFromString),
   Flag.withDescription(
     "Token TTL, for example `5m`, `1h`, or `15 minutes`. Defaults to 5 minutes.",
+  ),
+  Flag.optional,
+);
+
+const personFlag = Flag.String("person").pipe(
+  Flag.withSchema(PersonName),
+  Flag.withDescription(
+    "Whose device this pairs, on a server several people share. Threads they start are theirs.",
   ),
   Flag.optional,
 );
@@ -533,6 +544,7 @@ export const pairCommand = Command.make("pair", {
   scopes: authScopesFlag(AuthStandardClientScopes),
   ttl: ttlFlag,
   label: labelFlag,
+  person: personFlag,
   tailscale: tailscaleFlag,
   tailscaleServePort: tailscaleServePortFlag,
 }).pipe(
@@ -604,6 +616,7 @@ export const pairCommand = Command.make("pair", {
         scopes: flags.scopes,
         ttl: flags.ttl,
         label: flags.label,
+        person: flags.person,
       });
       const pairingUrl = buildPairingUrl(pairingBaseUrl, issued.credential);
 

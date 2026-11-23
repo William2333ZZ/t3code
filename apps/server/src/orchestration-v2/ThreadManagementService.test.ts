@@ -81,16 +81,27 @@ it("stamps authoritative provenance on commands that create threads or messages"
       workflow: "fix",
       step: "write",
     },
+    // Nor who the thread belongs to: that is the sending session's person.
+    owner: { person: "someone-else" },
   };
 
   const stamped = ThreadManagementService.withCreationProvenance(command, {
     createdBy: "user",
     creationSource: "web",
+    person: "alice",
   });
   expect(stamped).toMatchObject({
     createdBy: "user",
     creationSource: "web",
+    owner: { person: "alice" },
   });
+  expect(
+    ThreadManagementService.withCreationProvenance(command, {
+      createdBy: "user",
+      creationSource: "web",
+      person: undefined,
+    }),
+  ).not.toHaveProperty("owner");
   expect(stamped).not.toHaveProperty("linkOrigin");
   expect(stamped).not.toHaveProperty("delegatedFrom");
   expect(stamped).not.toHaveProperty("initialMessage");

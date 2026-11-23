@@ -49,6 +49,7 @@ import {
 import { AuthMcpClientAccess } from "./auth.ts";
 import { ChatAttachment } from "./chatAttachment.ts";
 import { ThreadGuestShare } from "./guestShare.ts";
+import { PersonName } from "./person.ts";
 import { StoredThreadTags, ThreadTag } from "./threadTags.ts";
 import { ThreadTitleRegenerationOutcome } from "./threadTitle.ts";
 import {
@@ -127,6 +128,16 @@ export const OrchestrationV2LinkOrigin = Schema.Struct({
   access: Schema.optional(AuthMcpClientAccess),
 });
 export type OrchestrationV2LinkOrigin = typeof OrchestrationV2LinkOrigin.Type;
+
+/**
+ * The person a thread's work is for, on an environment several people share. The server takes
+ * it from the session that created the thread; work an agent derives from the thread carries
+ * the same owner. Absent when that session belongs to no one in particular.
+ */
+export const OrchestrationV2ThreadOwner = Schema.Struct({
+  person: Schema.String,
+});
+export type OrchestrationV2ThreadOwner = typeof OrchestrationV2ThreadOwner.Type;
 
 /**
  * Work from a link paired below full access may change only work from the same
@@ -550,6 +561,7 @@ export const OrchestrationV2AppThread = Schema.Struct({
   activeOrderKey: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
   /** Absent on threads written before tags existed; read as empty. */
   tags: Schema.optional(StoredThreadTags),
+  owner: Schema.optional(OrchestrationV2ThreadOwner),
   lastVisitedAt: Schema.NullOr(Schema.DateTimeUtc).pipe(
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
@@ -2458,6 +2470,7 @@ export const OrchestrationV2ThreadShell = Schema.Struct({
   activeOrderKey: Schema.optional(Schema.NullOr(TrimmedNonEmptyString)),
   /** Absent on threads written before tags existed; read as empty. */
   tags: Schema.optional(StoredThreadTags),
+  owner: Schema.optional(OrchestrationV2ThreadOwner),
   lastVisitedAt: Schema.optional(Schema.NullOr(Schema.DateTimeUtc)),
   opens: Schema.optional(LenientThreadOpens),
   titleRegeneration: Schema.optional(
@@ -3321,6 +3334,8 @@ export const OrchestrationV2Command = Schema.Union([
         metadata: Schema.optional(OrchestrationV2ProviderThreadNativeMetadata),
       }),
     ),
+    /** Only the server sets this, from the session that sent the command. */
+    owner: Schema.optional(OrchestrationV2ThreadOwner),
     /**
      * Only the server sets this. The thread and its first run commit together, so no client sees
      * the thread idle before its run exists. The run waits for `workspaceStrategy` when given one.
@@ -3425,6 +3440,13 @@ export const OrchestrationV2Command = Schema.Union([
     threadId: ThreadId,
     tag: ThreadTag,
     tagged: Schema.Boolean,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("thread.owner.set"),
+    commandId: CommandId,
+    threadId: ThreadId,
+    /** Null leaves the thread with no owner, for anyone to claim. */
+    person: Schema.NullOr(PersonName),
   }),
   Schema.Struct({
     type: Schema.Literal("thread.pin.reorder"),
@@ -3748,6 +3770,8 @@ export const OrchestrationV2Command = Schema.Union([
     title: Schema.optional(TrimmedNonEmptyString),
     sideChat: Schema.optional(Schema.Boolean),
     createdAt: Schema.optional(Schema.DateTimeUtc),
+    /** Only the server sets this: the person who forked, not the source thread's owner. */
+    owner: Schema.optional(OrchestrationV2ThreadOwner),
   }),
   Schema.Struct({
     type: Schema.Literal("thread.merge_back"),

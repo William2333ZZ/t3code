@@ -41,6 +41,8 @@ export interface BootstrapGrant {
   readonly label?: string;
   readonly proofKeyThumbprint?: string;
   readonly expiresAt: DateTime.DateTime;
+  /** The stored pairing link this grant came from; seeded grants have none. */
+  readonly pairingLinkId?: string;
 }
 
 export class UnknownBootstrapCredentialError extends Schema.TaggedError<UnknownBootstrapCredentialError>()(
@@ -671,6 +673,7 @@ const make = Effect.gen(function* () {
             ? { proofKeyThumbprint: consumed.value.proofKeyThumbprint }
             : {}),
           expiresAt: consumed.value.expiresAt,
+          pairingLinkId: consumed.value.id,
         } satisfies BootstrapGrant;
       }
 

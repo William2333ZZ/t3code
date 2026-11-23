@@ -559,6 +559,30 @@ any other thread on web and desktop, and a shorter read-only list on mobile.
   Linked environments must be on there. Both machines need a version of T3 Code
   that has this view.
 
+## Share one machine between people
+
+Several people can pair with the same machine and each see which threads are theirs. Give every
+person a short name, such as their GitHub handle, when you create their pairing link:
+
+```bash
+t3 pair --person alice
+```
+
+In **Settings → Sharing & access**, the same field is **Whose device** in the pairing dialog.
+Names are lower-case letters, digits, dots, dashes and underscores.
+
+A device paired through that link is Alice's. Every thread started from it shows `@alice` in the
+sidebar, and so do the subagents and threads its agents start. Once you are paired as someone, the
+people button beside the sidebar search switches between everyone's threads and yours.
+
+This says whose work a thread is; it does not hide anything. Everyone paired with the machine can
+still open every thread, answer its agent, and use its terminal. Share a machine only with people
+you would give your own access to.
+
+Someone paired under a name can pair more of their own devices, but not create a link in another
+name. Links made from the machine itself, with `t3 pair` or from the desktop app, can name anyone.
+A link with no name works as before, and its threads belong to no one.
+
 ## Manage or revoke access
 
 On the host, **Settings → Sharing & access** lets authorized administrators create

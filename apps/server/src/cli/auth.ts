@@ -3,6 +3,7 @@ import {
   AuthRevokePairingLinkInput,
   AuthSessionId,
   AuthStandardClientScopes,
+  PersonName,
 } from "@t3tools/contracts";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
@@ -76,6 +77,12 @@ const labelFlag = Flag.String("label").pipe(
   Flag.optional,
 );
 
+const personFlag = Flag.String("person").pipe(
+  Flag.withSchema(PersonName),
+  Flag.withDescription("Whose device or session this is, on a server several people share."),
+  Flag.optional,
+);
+
 const subjectFlag = Flag.String("subject").pipe(
   Flag.withDescription("Optional session subject."),
   Flag.optional,
@@ -105,6 +112,7 @@ const pairingCreateCommand = Command.make("create", {
   scopes: authScopesFlag(AuthStandardClientScopes),
   ttl: ttlFlag,
   label: labelFlag,
+  person: personFlag,
   baseUrl: baseUrlFlag,
   json: jsonFlag,
 }).pipe(
@@ -119,6 +127,7 @@ const pairingCreateCommand = Command.make("create", {
             subject: "one-time-token",
             ...(Option.isSome(flags.ttl) ? { ttl: flags.ttl.value } : {}),
             ...(Option.isSome(flags.label) ? { label: flags.label.value } : {}),
+            ...(Option.isSome(flags.person) ? { person: flags.person.value } : {}),
           });
           const output = formatIssuedPairingCredential(issued, {
             json: flags.json,
@@ -295,6 +304,7 @@ const sessionIssueCommand = Command.make("issue", {
   scopes: authScopesFlag(AuthStandardClientScopes),
   ttl: ttlFlag,
   label: labelFlag,
+  person: personFlag,
   subject: subjectFlag,
   tokenOnly: tokenOnlyFlag,
   json: jsonFlag,
@@ -310,6 +320,7 @@ const sessionIssueCommand = Command.make("issue", {
             ...(Option.isSome(flags.ttl) ? { ttl: flags.ttl.value } : {}),
             ...(Option.isSome(flags.label) ? { label: flags.label.value } : {}),
             ...(Option.isSome(flags.subject) ? { subject: flags.subject.value } : {}),
+            ...(Option.isSome(flags.person) ? { person: flags.person.value } : {}),
           });
           yield* Console.log(
             formatIssuedSession(issued, {

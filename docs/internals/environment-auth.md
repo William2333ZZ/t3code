@@ -45,6 +45,28 @@ call. Only an unexpired, unrevoked row moves, so an idle link still ends after
 30 days and a revoke is final. Other MCP clients keep the fixed 30 days their
 token carries.
 
+### A person is a name on a session, not an account
+
+On a shared environment a pairing link can name a person, and the sessions it pairs carry that
+name ([PersonBindings](../../apps/server/src/auth/PersonBindings.ts)). There is no account behind
+it and it grants nothing: scopes still decide what a session may do. It exists so a thread can
+record whose work it is.
+
+A thread's `owner` is stamped by the server from the creating session, the same way `linkOrigin`
+is, so a client cannot claim one
+([withCreationProvenance](../../apps/server/src/orchestration-v2/ThreadManagementService.ts)).
+Work an agent derives from a thread keeps its owner; a person's fork is the forker's. A session
+with no person is the environment's own and may reassign any thread.
+
+**Ownership is attribution, not isolation.** No read path filters by owner, and the sidebar's
+"yours" view is a client-side filter. Making it a boundary means fencing every thread read
+(streams, history, search, MCP, peer links) the way `linkOrigin` fences writes; a partial fence
+would look like privacy without being it.
+
+The bindings live in a table the service creates itself rather than in a numbered migration. A
+fork that tracks upstream cannot number its own: the migrator skips every id up to the highest a
+database recorded, so the next upstream migration with that id would be skipped or refused.
+
 ### Guest links are not sessions
 
 A [guest link](../user/guest-links.md) gives one browser read access to one

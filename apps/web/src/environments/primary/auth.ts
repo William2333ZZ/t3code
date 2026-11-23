@@ -117,6 +117,7 @@ export interface ServerPairingLinkRecord {
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly subject: string;
   readonly label?: string;
+  readonly person?: string;
   readonly createdAt: string;
   readonly expiresAt: string;
   readonly connectDeviceRequest?: AuthConnectDeviceRequest;
@@ -128,6 +129,7 @@ export interface ServerClientSessionRecord {
   readonly scopes: ReadonlyArray<AuthEnvironmentScope>;
   readonly method: ServerAuthSessionMethod;
   readonly client: AuthClientMetadata;
+  readonly person?: string;
   readonly issuedAt: string;
   readonly expiresAt: string;
   readonly lastConnectedAt: string | null;

@@ -215,6 +215,7 @@ import {
   monitorUpdateRunIds,
   subagentThreadTitle,
 } from "@t3tools/provider-core/server/subagentProjection";
+import { ownedBy } from "./threadOwner.ts";
 import {
   forkableSourceRunStatusError,
   isForkableSourceRunStatus,
@@ -659,6 +660,7 @@ function commandThreadId(command: OrchestrationV2ServerCommand): ThreadId {
     case "thread.pin.reorder":
     case "thread.active.reorder":
     case "thread.tag.set":
+    case "thread.owner.set":
     case "thread.visit":
     case "thread.mark-unread":
     case "thread.metadata.update":
@@ -4073,6 +4075,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       activeProviderThreadId: null,
       pullRequests: [],
       ...(command.linkOrigin === undefined ? {} : { linkOrigin: command.linkOrigin }),
+      ...(command.owner === undefined ? {} : { owner: command.owner }),
       // Only stamped work names a remote parent, so a client cannot claim one.
       ...(command.linkOrigin === undefined || command.delegatedFrom === undefined
         ? {}
@@ -4405,6 +4408,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           | "thread.unpin"
           | "thread.pin.reorder"
           | "thread.tag.set"
+          | "thread.owner.set"
           | "thread.active.reorder"
           | "thread.mark-unread"
           | "thread.metadata.update"
@@ -5084,6 +5088,8 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
             updatedAt: thread.updatedAt,
           };
         }
+        case "thread.owner.set":
+          return ownedBy(thread, command.person === null ? undefined : { person: command.person });
         case "thread.tag.set": {
           const current = thread.tags ?? [];
           return {
@@ -5565,6 +5571,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           return "thread.tags-updated" as const;
         case "thread.mark-unread":
           return "thread.marked-unread" as const;
+        case "thread.owner.set":
         case "thread.metadata.update":
         case "thread.title.regeneration.complete":
           return "thread.metadata-updated" as const;
@@ -6105,7 +6112,8 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       threadId: command.targetThreadId,
       providerInstanceId: targetThread.providerInstanceId,
       occurredAt: now,
-      payload: targetThread,
+      // A person's fork is that person's work; an agent's fork stays with the source's owner.
+      payload: command.createdBy === "user" ? ownedBy(targetThread, command.owner) : targetThread,
     });
     yield* emitEvent({
       type: "context-transfer.created",
@@ -15964,6 +15972,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       case "thread.pin.reorder":
       case "thread.active.reorder":
       case "thread.tag.set":
+      case "thread.owner.set":
       case "thread.mark-unread":
       case "thread.pull-request.link":
       case "thread.pull-request.unlink":

@@ -184,6 +184,7 @@ import * as ProjectStore from "./orchestration-v2/ProjectStore.ts";
 import * as ThreadSearch from "./orchestration-v2/ThreadSearch.ts";
 import * as OrchestrationEventStore from "./persistence/OrchestrationEventStore.ts";
 import { userFacingDispatchErrorMessage } from "./orchestration-v2/UserFacingErrors.ts";
+import { ownerChangeRefusal } from "./orchestration-v2/threadOwner.ts";
 import * as ProviderRegistry from "./provider/ProviderRegistry.ts";
 import * as SecretCheck from "./secrets/SecretCheck.ts";
 import * as AcpRegistrySessions from "./provider/AcpRegistrySessions.ts";
@@ -1454,6 +1455,29 @@ export const layerWsRpc = (
       const currentSessionId = currentSession.sessionId;
       const sql = yield* SqlClient.SqlClient;
       const threadManagement = yield* ThreadManagementService.ThreadManagementService;
+      const refuseOwnerChangeUnlessAllowed = Effect.fn("ws.refuseOwnerChangeUnlessAllowed")(
+        function* (
+          command: Extract<OrchestrationV2Command, { readonly type: "thread.owner.set" }>,
+        ) {
+          const refuse = (message: string) =>
+            new OrchestrationV2DispatchCommandError({
+              commandId: command.commandId,
+              commandType: command.type,
+              message,
+              detail: message,
+            });
+          const thread = yield* threadManagement
+            .getThreadShell(command.threadId)
+            .pipe(Effect.mapError(() => refuse("That thread could not be read.")));
+          if (thread === null) return yield* refuse("That thread no longer exists.");
+          const refusal = ownerChangeRefusal({
+            current: thread.owner?.person,
+            requester: currentSession.person,
+            target: command.person,
+          });
+          if (refusal !== undefined) return yield* refuse(refusal);
+        },
+      );
       const intakeContext = yield* Effect.context<
         | ThreadManagementService.ThreadManagementService
         | ThreadLaunchService.ThreadLaunchService
@@ -2039,6 +2063,11 @@ export const layerWsRpc = (
               : {}),
           }).pipe(
             Effect.andThen(
+              command.type === "thread.owner.set"
+                ? refuseOwnerChangeUnlessAllowed(command)
+                : Effect.void,
+            ),
+            Effect.andThen(
               startup
                 .enqueueCommand(
                   (command.type === "prepared-run.retry"
@@ -2048,6 +2077,7 @@ export const layerWsRpc = (
                           createdBy: "user",
                           creationSource:
                             "creationSource" in command ? command.creationSource : "web",
+                          person: currentSession.person,
                         }),
                         {
                           managesProviders:
@@ -2258,6 +2288,9 @@ export const layerWsRpc = (
                               }),
                           createdBy: "user",
                           creationSource: input.creationSource ?? "web",
+                          ...(currentSession.person === undefined
+                            ? {}
+                            : { owner: { person: currentSession.person } }),
                         }),
                       ),
                       Effect.provide(intakeContext),

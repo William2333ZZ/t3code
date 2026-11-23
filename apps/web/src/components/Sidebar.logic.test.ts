@@ -40,6 +40,7 @@ import {
   resolveSidebarFolderDot,
   sidebarFolderExpansionKeys,
   withoutRemovedCheckout,
+  filterThreadsToOwner,
 } from "./Sidebar.logic";
 import { scopeThreadRef, scopedThreadKey } from "@t3tools/client-runtime/environment";
 import {
@@ -1830,5 +1831,23 @@ describe("filterSidebarProjectScopeItems", () => {
 
     expect(filter("")).toEqual([ADD_PROJECT_SCOPE_ITEM_VALUE, "all", "p1"]);
     expect(filter("project")).toEqual(["p1"]);
+  });
+});
+
+describe("filterThreadsToOwner", () => {
+  const shared = EnvironmentId.make("environment:shared");
+  const solo = EnvironmentId.make("environment:solo");
+  const threads = [
+    { environmentId: shared, owner: "alice", name: "alice's" },
+    { environmentId: shared, owner: "bob", name: "bob's" },
+    { environmentId: shared, owner: null, name: "unclaimed" },
+    { environmentId: solo, owner: null, name: "solo" },
+  ];
+  const names = (personByEnvironment: ReadonlyMap<string, string>) =>
+    filterThreadsToOwner(threads, personByEnvironment).map((thread) => thread.name);
+
+  it("keeps my threads, and everything on environments that pair me as no one", () => {
+    expect(names(new Map([[shared, "alice"]]))).toEqual(["alice's", "solo"]);
+    expect(names(new Map())).toEqual(["alice's", "bob's", "unclaimed", "solo"]);
   });
 });

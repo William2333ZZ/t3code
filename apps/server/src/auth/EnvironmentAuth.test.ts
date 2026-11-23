@@ -1159,5 +1159,68 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
         Effect.provide(layerEnvironmentAuth({ desktopBootstrapToken: "desktop-bootstrap-token" })),
       ),
     );
+
+    it.effect("gives a device paired through a person's link that person's sessions", () =>
+      Effect.gen(function* () {
+        const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
+        const sessions = yield* SessionStore.SessionStore;
+
+        const aliceLink = yield* serverAuth.createPairingLink({ person: "alice" });
+        expect(
+          (yield* serverAuth.listPairingLinks()).find((link) => link.id === aliceLink.id),
+        ).toMatchObject({ person: "alice" });
+        const browser = yield* serverAuth.createBrowserSession(
+          aliceLink.credential,
+          requestMetadata,
+        );
+        const cookieSession = yield* serverAuth.authenticateHttpRequest(
+          makeCookieRequest(sessions.cookieName, browser.sessionToken),
+        );
+        expect(cookieSession.person).toBe("alice");
+        expect(
+          yield* serverAuth.getSessionState(
+            makeCookieRequest(sessions.cookieName, browser.sessionToken),
+          ),
+        ).toMatchObject({ authenticated: true, person: "alice" });
+
+        const bobLink = yield* serverAuth.createPairingLink({ person: "bob" });
+        const bearer = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(
+          bobLink.credential,
+          undefined,
+          requestMetadata,
+        );
+        const bearerSession = yield* serverAuth.authenticateHttpRequest(
+          makeBearerRequest(bearer.access_token),
+        );
+        expect(bearerSession.person).toBe("bob");
+
+        // A link nobody was named on pairs a session that is no one's, as before.
+        const plainLink = yield* serverAuth.createPairingLink();
+        const plain = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(
+          plainLink.credential,
+          undefined,
+          requestMetadata,
+        );
+        const plainSession = yield* serverAuth.authenticateHttpRequest(
+          makeBearerRequest(plain.access_token),
+        );
+        expect(plainSession.person).toBeUndefined();
+
+        const issued = yield* serverAuth.issueSession({ person: "carol" });
+        expect(
+          (yield* serverAuth.authenticateHttpRequest(makeBearerRequest(issued.token))).person,
+        ).toBe("carol");
+
+        const listed = yield* serverAuth.listClientSessions(cookieSession.sessionId);
+        expect(
+          Object.fromEntries(listed.map((session) => [session.sessionId, session.person])),
+        ).toEqual({
+          [cookieSession.sessionId]: "alice",
+          [bearerSession.sessionId]: "bob",
+          [plainSession.sessionId]: undefined,
+          [issued.sessionId]: "carol",
+        });
+      }).pipe(Effect.provide(layerEnvironmentAuth())),
+    );
   },
 );

@@ -17,6 +17,7 @@ import {
   type AuthEnvironmentScope,
   type AuthGrantScope,
   type AuthPairingCredentialResult,
+  normalizePersonName,
   type AdvertisedEndpoint,
   type EnvironmentId,
 } from "@t3tools/contracts";
@@ -59,7 +60,7 @@ import {
   type ServerPairingLinkRecord,
 } from "~/environments/primary";
 import { authEnvironment } from "~/state/auth";
-import { readEnvironmentScope } from "~/state/session";
+import { readEnvironmentScope, useEnvironmentPersons } from "~/state/session";
 import { useManagedPolicy, usePrimaryManagedPolicy } from "~/state/managedPolicy";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { ManagedControl } from "../ManagedPolicy";
@@ -261,7 +262,8 @@ const PairingLinkListRow = memo(function PairingLinkListRow({
 
   const expiresAbsolute = formatAccessTimestamp(pairingLink.expiresAt);
 
-  const primaryLabel = pairingLink.label ?? gt("Pairing link");
+  const linkLabel = pairingLink.label ?? gt("Pairing link");
+  const primaryLabel = pairingLink.person ? `${linkLabel} · @${pairingLink.person}` : linkLabel;
   const selectedQrOption = selectQrEndpointOption(
     endpointCopyOptions,
     qrEndpointId,
@@ -536,6 +538,7 @@ const ConnectedClientListRow = memo(function ConnectedClientListRow({
     clientSession.client.os ?? null,
     clientSession.client.browser ?? null,
     clientSession.client.ipAddress ?? null,
+    clientSession.person ? `@${clientSession.person}` : null,
   ].filter((value): value is string => value !== null);
   const primaryLabel =
     clientSession.client.label ??
@@ -616,6 +619,11 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
   const [dialogOpen, setDialogOpen] = useState(false);
   const pairingDialogSessionRef = useRef(0);
   const [pairingLabel, setPairingLabel] = useState("");
+  const [pairingPerson, setPairingPerson] = useState("");
+  // A session that has a person pairs only that person's devices; the server fills the name in.
+  const ownPerson = useEnvironmentPersons([environmentId]).get(environmentId);
+  const pairingPersonName = normalizePersonName(pairingPerson);
+  const pairingPersonInvalid = pairingPerson.trim() !== "" && pairingPersonName === undefined;
   const [pairingScopes, setPairingScopes] = useState<ReadonlyArray<AuthGrantScope>>([
     ...AuthStandardClientScopes,
   ]);
@@ -629,6 +637,7 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
     if (!open) {
       pairingDialogSessionRef.current += 1;
       setPairingLabel("");
+      setPairingPerson("");
       setPairingScopes(
         AuthStandardClientScopes.filter((scope) => delegatableScopes.includes(scope)),
       );
@@ -638,6 +647,7 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
   const handleCreatePairingLink = async () => {
     if (
       selectedScopes.length === 0 ||
+      pairingPersonInvalid ||
       !readEnvironmentScope(environmentId, AuthAccessWriteScope) ||
       !selectedScopes.every((scope) => readEnvironmentScope(environmentId, scope))
     )
@@ -647,7 +657,11 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
     const trimmedLabel = pairingLabel.trim();
     const result = await createPairingCredential({
       environmentId,
-      input: { ...(trimmedLabel ? { label: trimmedLabel } : {}), scopes: selectedScopes },
+      input: {
+        ...(trimmedLabel ? { label: trimmedLabel } : {}),
+        ...(ownPerson === undefined && pairingPersonName ? { person: pairingPersonName } : {}),
+        scopes: selectedScopes,
+      },
     });
     if (result._tag === "Success") {
       onPairingLinkCreated(result.value);
@@ -736,6 +750,30 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
                 autoFocus
               />
             </label>
+            {ownPerson === undefined ? (
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-medium text-foreground">
+                  <T>Whose device (optional)</T>
+                </span>
+                <Input
+                  value={pairingPerson}
+                  onChange={(event) => setPairingPerson(event.target.value)}
+                  placeholder={gt("e.g. alice")}
+                  disabled={isCreatingPairingLink}
+                  aria-invalid={pairingPersonInvalid}
+                />
+                <span className="mt-1.5 block text-xs text-muted-foreground">
+                  {pairingPersonInvalid ? (
+                    <T>Use lower-case letters, digits, dots, dashes or underscores.</T>
+                  ) : (
+                    <T>
+                      For a machine several people share. Threads started from this device are
+                      theirs.
+                    </T>
+                  )}
+                </span>
+              </label>
+            ) : null}
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
