@@ -114,6 +114,10 @@ reach the API. Only the server process is measured.
   A rising heap floor is a leak; a high but flat one is not.
 - The quiet and streaming windows save a CPU and an allocation profile, so a regression comes with
   the functions that cost it.
+- Every window also reads event-loop delay (p50, p99 and max past the 10 ms sampling interval)
+  and GC count and pause time from inside the server, over the inspector. Delay is the user-felt
+  cost: a stalled loop holds every client's RPC, however low the CPU average is. The delay
+  histogram's own timer wakes the loop once per sample, so `wakeupsPerSec` leaves those out.
 
 Run it on macOS and Windows too, and on Linux with `--no-agent-scope`. Only Linux has agent
 scopes, so other platforms take per-process paths a Linux server with a systemd user manager never
