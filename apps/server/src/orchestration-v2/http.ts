@@ -29,7 +29,7 @@ import {
   THREAD_HISTORY_PAGE_POLICY,
   OLDER_THREAD_USER_TURN_LIMIT,
 } from "./threadHistoryPaging.ts";
-import { makeThreadConfinement } from "./threadConfinement.ts";
+import { confinedPerson, makeThreadConfinement } from "./threadConfinement.ts";
 import * as ThreadManagementService from "./ThreadManagementService.ts";
 import * as ProjectStore from "./ProjectStore.ts";
 import {
@@ -203,7 +203,7 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.shellSnapshot")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          const confinement = confinementFor(session.person);
+          const confinement = confinementFor(confinedPerson(session));
           return yield* answerShellSnapshot(args.query).pipe(
             Effect.flatMap((answer) => confinement?.output(answer) ?? Effect.succeed(answer)),
             traceLocalHandlerWork,
@@ -218,7 +218,7 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadSnapshot")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          yield* requireOwnThread(session.person, args.params.threadId);
+          yield* requireOwnThread(confinedPerson(session), args.params.threadId);
           const snapshot = yield* loadThreadSnapshot(
             args.params.threadId,
             "orchestration_thread_snapshot_failed",
@@ -234,7 +234,7 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadTranscript")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          yield* requireOwnThread(session.person, args.params.threadId);
+          yield* requireOwnThread(confinedPerson(session), args.params.threadId);
           return yield* threadManagement.getThreadTranscript(args.params.threadId).pipe(
             Effect.provideService(ServerEnvironment.ServerEnvironmentIdentity, environment),
             traceLocalHandlerWork,
@@ -260,7 +260,7 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadBoundedSnapshot")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          yield* requireOwnThread(session.person, args.params.threadId);
+          yield* requireOwnThread(confinedPerson(session), args.params.threadId);
           const snapshot = yield* loadThreadSnapshotWindow(
             args.params.threadId,
             undefined,
@@ -287,7 +287,7 @@ export const layer = HttpApiBuilder.group(
         Effect.fn("environment.orchestration.threadHistoryPage")(function* (args) {
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
-          yield* requireOwnThread(session.person, args.params.threadId);
+          yield* requireOwnThread(confinedPerson(session), args.params.threadId);
           const decoded = Result.try(() => decodeThreadHistoryCursor(args.query.cursor));
           if (Result.isFailure(decoded)) {
             const cause = decoded.failure;

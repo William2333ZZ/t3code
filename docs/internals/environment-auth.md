@@ -63,8 +63,9 @@ with no person is the environment's own and may reassign any thread.
 on the transport, not in each handler: every WebSocket RPC a session with a person calls has its
 input checked for thread ids and its answer filtered, and the orchestration HTTP routes do the
 same, so a new RPC that takes a `threadId` is fenced without anyone remembering to. A thread an
-agent started has no owner of its own and follows its root. Sessions with no person are not
-wrapped at all.
+agent started has no owner of its own and follows its root. A session with no person, or one
+holding `access:write`, runs the environment and is not wrapped at all; a manager can have a name
+and still see everything.
 
 What the fence does not cover: requests that reach a thread through another id (a terminal, a run,
 a workflow, a path inside its worktree), lists that only mention threads (scheduled tasks, linked

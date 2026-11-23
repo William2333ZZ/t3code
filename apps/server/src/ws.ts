@@ -184,7 +184,7 @@ import * as ProjectStore from "./orchestration-v2/ProjectStore.ts";
 import * as ThreadSearch from "./orchestration-v2/ThreadSearch.ts";
 import * as OrchestrationEventStore from "./persistence/OrchestrationEventStore.ts";
 import { userFacingDispatchErrorMessage } from "./orchestration-v2/UserFacingErrors.ts";
-import { makeThreadConfinement } from "./orchestration-v2/threadConfinement.ts";
+import { confinedPerson, makeThreadConfinement } from "./orchestration-v2/threadConfinement.ts";
 import { ownerChangeRefusal } from "./orchestration-v2/threadOwner.ts";
 import * as ProviderRegistry from "./provider/ProviderRegistry.ts";
 import * as SecretCheck from "./secrets/SecretCheck.ts";
@@ -3743,12 +3743,12 @@ export const layerWsRpc = (
             ),
           ),
       });
-      // A session with no person runs the environment and sees every thread.
+      const person = confinedPerson(currentSession);
       const confined =
-        currentSession.person === undefined
+        person === undefined
           ? handlers
           : makeThreadConfinement({
-              person: currentSession.person,
+              person,
               getThreadShell: threadManagement.getThreadShell,
             }).handlers(handlers);
       const splitHandlers: Pick<typeof handlers, SplitWsRpc["_tag"]> = confined;

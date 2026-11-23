@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Stream from "effect/Stream";
 
-import { makeThreadConfinement } from "./threadConfinement.ts";
+import { confinedPerson, makeThreadConfinement } from "./threadConfinement.ts";
 
 const thread = (id: string, owner?: string, rootThreadId = id) =>
   ({
@@ -135,3 +135,11 @@ it.effect("confines every handler, whether it answers once or as a stream", () =
     ]);
   }),
 );
+
+it("confines a person's ordinary session, but not one that may manage access or has no person", () => {
+  expect(confinedPerson({ person: "alice", scopes: ["orchestration:read"] })).toBe("alice");
+  expect(
+    confinedPerson({ person: "alice", scopes: new Set(["orchestration:read", "access:write"]) }),
+  ).toBeUndefined();
+  expect(confinedPerson({ scopes: ["orchestration:read"] })).toBeUndefined();
+});

@@ -1,6 +1,22 @@
-import type { OrchestrationV2ThreadShell, ThreadId } from "@t3tools/contracts";
+import {
+  AuthAccessWriteScope,
+  type OrchestrationV2ThreadShell,
+  type ThreadId,
+} from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
+
+/**
+ * The person a session is confined to, if any. A session with no person, or one that may manage
+ * who has access, runs the environment and sees every thread.
+ */
+export const confinedPerson = (session: {
+  readonly person?: string | undefined;
+  readonly scopes: Iterable<string>;
+}): string | undefined =>
+  session.person === undefined || [...session.scopes].includes(AuthAccessWriteScope)
+    ? undefined
+    : session.person;
 
 type ThreadRow = Pick<OrchestrationV2ThreadShell, "id" | "owner" | "lineage">;
 

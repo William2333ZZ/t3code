@@ -574,8 +574,20 @@ Names are lower-case letters, digits, dots, dashes and underscores.
 A device paired through that link is Alice's. Every thread started from it is hers, and so are
 the subagents and threads its agents start. Alice's devices show only her threads: other people's
 do not appear in her sidebar, her search or her notifications, and she cannot open, answer or stop
-them. A device paired with no name, such as the machine itself, sees every thread and shows
-`@alice` on hers.
+them. A device that may manage who has access sees every thread and shows `@alice` on hers; so
+does one paired with no name, such as the machine itself.
+
+Managing access is part of what `t3 pair` grants unless you say otherwise, so a link made with
+`--person` alone is a manager's. For someone who should see only their own threads, name the
+permissions and leave `access:write` out:
+
+```bash
+t3 auth pairing create --person alice \
+  --scope orchestration:read --scope orchestration:operate \
+  --scope terminal:read --scope terminal:operate \
+  --scope filesystem:read --scope filesystem:write \
+  --scope source-control:write --scope preview:operate --scope diagnostics:read
+```
 
 To change whose thread it is, right-click it and open **Owner**. You can hand one of yours to
 anyone paired with the machine, or leave it with no owner; either way it leaves your list. A device
