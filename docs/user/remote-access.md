@@ -588,6 +588,24 @@ Someone paired under a name can pair more of their own devices, but not create a
 name. Links made from the machine itself, with `t3 pair` or from the desktop app, can name anyone.
 A link with no name works as before, and its threads belong to no one.
 
+### Name the employee a machine's agent works as
+
+A shared machine can present its agent as a named member of the team. Write a JSON file and point
+the server at it before it starts:
+
+```json
+{ "id": "polaris", "name": "Polaris", "title": "Software engineer", "about": "Bring me bugs." }
+```
+
+```bash
+T3CODE_EMPLOYEE_FILE=/path/to/employee.json t3 serve --lan
+```
+
+`id` and `name` are required; `alias`, `title` and `about` are optional. Clients then call the
+machine by the employee's name and title, and a new thread opens with a card saying who the work
+goes to. A file that cannot be read is ignored and the machine keeps its usual name. Telling the
+agent itself who it is belongs in the agent's own instructions file.
+
 ## Manage or revoke access
 
 On the host, **Settings → Sharing & access** lets authorized administrators create

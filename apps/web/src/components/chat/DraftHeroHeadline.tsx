@@ -45,6 +45,7 @@ import {
 } from "../ui/combobox";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { InlineButton } from "../ui/button";
+import { EmployeeCard } from "./EmployeeCard";
 import { DraftProjectName } from "./DraftProjectName";
 import { DraftHeroProjectHeading } from "./DraftHeroProjectHeading";
 import { TriageDraftHero } from "./TriageDraftHero";
@@ -357,8 +358,14 @@ export function DraftHeroHeadline({
     );
   }
 
+  const employee = environments.find(
+    (entry) =>
+      entry.environmentId === (activeProject?.environmentId ?? activeProjectRef?.environmentId),
+  )?.serverConfig?.environment.employee;
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col items-center">
+      {employee ? <EmployeeCard employee={employee} /> : null}
       {hasResolvedProject && !isScratchDraft ? (
         <DraftHeroProjectHeading projectName={activeProjectTitle ?? gt("Choose a project")}>
           {projectSelector}

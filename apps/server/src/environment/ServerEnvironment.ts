@@ -10,6 +10,7 @@ import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
@@ -23,6 +24,7 @@ import * as ServerConfig from "../config.ts";
 import { databaseMigrationHead } from "../persistence/databaseMigrationHead.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import { isSpeechPlatformSupported } from "../speech/platform.ts";
+import { employeeEnvironmentLabel, resolveServerEmployee } from "./ServerEmployee.ts";
 import { resolveServerEnvironmentLabel } from "./ServerEnvironmentLabel.ts";
 import { detectServerEnvironmentMachineKind } from "./ServerEnvironmentMachine.ts";
 
@@ -193,7 +195,10 @@ export const make = Effect.gen(function* () {
   const hostLibc = hostPlatform === "linux" ? yield* HostProcess.LinuxLibc : undefined;
   const environmentId = yield* identity.getEnvironmentId;
   const cwdBaseName = path.basename(serverConfig.cwd).trim();
-  const label = yield* resolveServerEnvironmentLabel({ cwdBaseName });
+  const employee = yield* resolveServerEmployee;
+  const label = Option.isSome(employee)
+    ? employeeEnvironmentLabel(employee.value)
+    : yield* resolveServerEnvironmentLabel({ cwdBaseName });
   const machine = yield* detectServerEnvironmentMachineKind();
   const launcher = yield* resolveServiceLauncherMode();
   const serverSelfUpdate = resolveServerSelfUpdateCapability({
@@ -211,6 +216,7 @@ export const make = Effect.gen(function* () {
   const descriptor: ExecutionEnvironmentDescriptor = {
     environmentId,
     label,
+    ...(Option.isSome(employee) ? { employee: employee.value } : {}),
     platform: {
       os: platformOs(hostPlatform),
       arch: platformArch(hostArchitecture),

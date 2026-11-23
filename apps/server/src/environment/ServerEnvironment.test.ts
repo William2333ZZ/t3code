@@ -198,6 +198,44 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("ServerEnvironmen
     }),
   );
   it.effect.each([
+    {
+      name: "a profile names the employee and the environment",
+      file: JSON.stringify({ id: "polaris", name: "Polaris", alias: "司南", title: "Engineer" }),
+      employee: { id: "polaris", name: "Polaris", alias: "司南", title: "Engineer" },
+      label: "Polaris · Engineer",
+    },
+    // A profile that is not one leaves an ordinary machine, named the usual way.
+    { name: "a broken profile is ignored", file: "{ not json", employee: undefined, label: "Mac" },
+    { name: "a missing profile is ignored", file: undefined, employee: undefined, label: "Mac" },
+  ])("$name", ({ file, employee, label }) =>
+    Effect.gen(function* () {
+      const fileSystem = yield* FileSystem.FileSystem;
+      const baseDir = yield* fileSystem.makeTempDirectoryScoped({
+        prefix: "t3-server-environment-employee-test-",
+      });
+      const employeeFile = `${baseDir}/employee.json`;
+      if (file !== undefined) yield* fileSystem.writeFileString(employeeFile, file);
+      const descriptor = yield* Effect.gen(function* () {
+        const serverEnvironment = yield* ServerEnvironment.ServerEnvironment;
+        return yield* serverEnvironment.getDescriptor;
+      }).pipe(
+        Effect.provide(
+          layerServerEnvironment(baseDir).pipe(
+            Layer.provide(
+              ConfigProvider.layer(
+                ConfigProvider.fromEnv({
+                  env: { T3CODE_EMPLOYEE_FILE: employeeFile, T3CODE_ENVIRONMENT_LABEL: "Mac" },
+                }),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(descriptor.employee).toEqual(employee);
+      expect(descriptor.label).toBe(label);
+    }),
+  );
+  it.effect.each([
     { platform: "darwin", architecture: "arm64", supported: true },
     { platform: "linux", architecture: "x64", supported: true },
     { platform: "linux", architecture: "x64", libc: "musl", supported: false },

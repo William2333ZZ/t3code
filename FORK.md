@@ -9,13 +9,14 @@ official build and is not supported by the T3 Code maintainers.
 
 ## What is different
 
-|             | Upstream                             | This fork                                                                                                       |
-| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Pairing     | A link has a label                   | A link can also name a person: `t3 pair --person alice`, or **Whose device** in Settings → Sharing & access     |
-| Sessions    | Know their device                    | Also know their person; `GET /api/auth/session` returns it                                                      |
-| Threads     | `createdBy` is user, agent or system | Also `owner: { person }`, stamped by the server from the creating session                                       |
-| Sidebar     | —                                    | Shows `@person` on a thread; a button switches between everyone's threads and yours                             |
-| Thread menu | —                                    | **Owner**: make an unowned thread yours, hand yours to someone paired on the machine, or leave it with no owner |
+|             | Upstream                             | This fork                                                                                                                                            |
+| ----------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pairing     | A link has a label                   | A link can also name a person: `t3 pair --person alice`, or **Whose device** in Settings → Sharing & access                                          |
+| Sessions    | Know their device                    | Also know their person; `GET /api/auth/session` returns it                                                                                           |
+| Threads     | `createdBy` is user, agent or system | Also `owner: { person }`, stamped by the server from the creating session                                                                            |
+| Sidebar     | —                                    | Shows `@person` on a thread; a button switches between everyone's threads and yours                                                                  |
+| Thread menu | —                                    | **Owner**: make an unowned thread yours, hand yours to someone paired on the machine, or leave it with no owner                                      |
+| Employee    | An environment is a machine          | An environment can name the employee its agent works as (`T3CODE_EMPLOYEE_FILE`); clients show a card with the name, title and what to bring to them |
 
 User guide: [Share one machine between people](docs/user/remote-access.md#share-one-machine-between-people).
 Design notes: [A person is a name on a session, not an account](docs/internals/environment-auth.md#a-person-is-a-name-on-a-session-not-an-account).
@@ -50,10 +51,13 @@ a merge conflict can be judged quickly.
 | `packages/client-runtime/src/state/models.ts`, `state/threadCommands.ts`, `operations/commands.ts`                                                                            | `owner` on the client thread model; the set-owner command                                      |
 | `apps/web/src/components/threadActionMenu.logic.ts`, `hooks/useThreadAction{s,Menu}.ts`, `contextMenuFallback.ts`                                                             | the Owner submenu, its handlers and three icons                                                |
 | `apps/web/src/components/Sidebar*.ts*`, `sidebar/SidebarThread{Header,Row}.tsx`, `settings/AuthorizedClientsSettings.tsx`, `state/session.ts`, `environments/primary/auth.ts` | owner display, the yours/everyone filter, the pairing field                                    |
+| `packages/contracts/src/environment.ts`, `apps/server/src/environment/ServerEnvironment.ts`                                                                                   | optional `employee` on the environment descriptor, read from a file                            |
+| `apps/web/src/components/chat/DraftHeroHeadline.tsx`                                                                                                                          | shows the employee card above a new thread                                                     |
 | `apps/web/src/i18n/translations/*.json`                                                                                                                                       | twelve new strings                                                                             |
 
 New files: `packages/contracts/src/person.ts`, `apps/server/src/auth/PersonBindings.ts`,
-`apps/server/src/orchestration-v2/threadOwner.ts`.
+`apps/server/src/orchestration-v2/threadOwner.ts`, `apps/server/src/environment/ServerEmployee.ts`,
+`apps/web/src/components/chat/EmployeeCard.tsx`.
 
 **No numbered migration.** People are stored in a `person_bindings` table that
 `PersonBindings` creates itself. Upstream numbers its migrations in one sequence and its migrator

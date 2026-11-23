@@ -229,9 +229,26 @@ export const ExecutionEnvironmentCapabilities = Schema.Struct({
 });
 export type ExecutionEnvironmentCapabilities = typeof ExecutionEnvironmentCapabilities.Type;
 
+/**
+ * The agent of this environment as a named member of a team: who clients are handing work to.
+ * Set by whoever runs the environment; absent on an ordinary machine.
+ */
+export const EnvironmentEmployee = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString,
+  /** A second name, such as one in another language. */
+  alias: Schema.optionalKey(TrimmedNonEmptyString),
+  /** The job, such as "Software engineer". */
+  title: Schema.optionalKey(TrimmedNonEmptyString),
+  /** One line on what to bring to this employee. */
+  about: Schema.optionalKey(TrimmedNonEmptyString),
+});
+export type EnvironmentEmployee = typeof EnvironmentEmployee.Type;
+
 export const ExecutionEnvironmentDescriptor = Schema.Struct({
   environmentId: EnvironmentId,
   label: TrimmedNonEmptyString,
+  employee: Schema.optionalKey(EnvironmentEmployee),
   platform: ExecutionEnvironmentPlatform,
   serverVersion: TrimmedNonEmptyString,
   orchestrationProtocolVersion: Schema.optionalKey(Schema.Int),
