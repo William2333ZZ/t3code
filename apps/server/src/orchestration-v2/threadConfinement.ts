@@ -160,7 +160,15 @@ export const makeThreadConfinement = <LookupError>(input: {
         const run = handler as (payload: unknown, ...rest: ReadonlyArray<unknown>) => unknown;
         return [
           name,
-          (payload: unknown, ...rest: ReadonlyArray<unknown>) => {
+          (sent: unknown, ...rest: ReadonlyArray<unknown>) => {
+            // A client that resumes its thread list keeps the rows it has, including ones it
+            // may no longer see. Without a cursor the server sends the list afresh.
+            const payload =
+              name.endsWith("subscribeShell") && isRecord(sent)
+                ? Object.fromEntries(
+                    Object.entries(sent).filter(([key]) => key !== "afterSequence"),
+                  )
+                : sent;
             // Handlers only describe work, so asking once which kind this is starts nothing.
             const first = run(payload, ...rest);
             const again = (checked: unknown) =>

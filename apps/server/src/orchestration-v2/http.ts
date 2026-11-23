@@ -204,7 +204,9 @@ export const layer = HttpApiBuilder.group(
           yield* annotateEnvironmentRequest(args.endpoint.name);
           const session = yield* requireEnvironmentScope(AuthOrchestrationReadScope);
           const confinement = confinementFor(confinedPerson(session));
-          return yield* answerShellSnapshot(args.query).pipe(
+          // A confined client must not keep the rows it already holds; see threadConfinement.
+          const { resumeFrom: _resumeFrom, ...fresh } = args.query;
+          return yield* answerShellSnapshot(confinement === undefined ? args.query : fresh).pipe(
             Effect.flatMap((answer) => confinement?.output(answer) ?? Effect.succeed(answer)),
             traceLocalHandlerWork,
             Effect.catch((cause) =>

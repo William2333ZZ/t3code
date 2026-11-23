@@ -143,3 +143,29 @@ it("confines a person's ordinary session, but not one that may manage access or 
   ).toBeUndefined();
   expect(confinedPerson({ scopes: ["orchestration:read"] })).toBeUndefined();
 });
+
+it.effect("asks for the thread list afresh, so rows a client held from before are replaced", () =>
+  Effect.gen(function* () {
+    const asked: Array<unknown> = [];
+    const handlers = alice.handlers({
+      "orchestration.subscribeShell": (input: {
+        afterSequence?: number;
+        omitOlderSettled?: true;
+      }) => {
+        asked.push(input);
+        return Stream.make({ kind: "synchronized" });
+      },
+      "orchestration.subscribeThread": (input: { threadId: string; afterSequence?: number }) => {
+        asked.push(input);
+        return Stream.make({ kind: "synchronized" });
+      },
+    });
+    yield* Stream.runDrain(
+      handlers["orchestration.subscribeShell"]({ afterSequence: 41, omitOlderSettled: true }),
+    );
+    yield* Stream.runDrain(
+      handlers["orchestration.subscribeThread"]({ threadId: "mine", afterSequence: 7 }),
+    );
+    expect(asked).toEqual([{ omitOlderSettled: true }, { threadId: "mine", afterSequence: 7 }]);
+  }),
+);

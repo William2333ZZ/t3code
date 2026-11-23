@@ -2550,6 +2550,8 @@
   "2d1c111e1b4ae0b0": "Delete thread \"{title}\"?",
   "c568ab8dad798ec5": "This permanently clears conversation history for this thread.",
   "0fd1c746a0e38003": "Failed to delete thread",
+  "3e91ed7677097dd8": "Showing your threads. Show everyone's",
+  "751507a4c53c6d16": "Showing everyone's threads. Show only yours",
   "1c8fc3c4a42949ab": "Projects: {projects}",
   "165511761be2855c": "Search projects",
   "a46a6467883575a4": "Search projects...",

@@ -3,6 +3,7 @@ import { createEnvironmentSessionAtoms } from "@t3tools/client-runtime/state/ses
 import {
   type AuthEnvironmentScope,
   type AuthSessionState,
+  AuthAccessWriteScope,
   AuthRelayConfigureScope,
   type EnvironmentId,
   sessionGrantsScope,
@@ -151,6 +152,27 @@ const environmentPersonsAtom = Atom.family((idsKey: string) => {
     );
   }).pipe(Atom.withLabel(`web-environment-persons:${idsKey}`));
 });
+
+const environmentManagedAtom = Atom.family((idsKey: string) => {
+  const ids = idsKey === "" ? [] : (idsKey.split("\n") as EnvironmentId[]);
+  const statesAtom = environmentSessionStatesAtom(idsKey);
+  return Atom.make((get): boolean => {
+    const states = get(statesAtom);
+    return ids.some(
+      (_id, index) =>
+        AsyncResult.getOrElse(states[index]!, () => null)?.person !== undefined &&
+        sessionHasScope(states[index]!, AuthAccessWriteScope),
+    );
+  }).pipe(Atom.withLabel(`web-environment-managed:${idsKey}`));
+});
+
+/**
+ * Whether this client is a named manager on any of these environments. Only a manager is sent
+ * other people's threads, so only a manager has a choice between everyone's and their own.
+ */
+export function useManagesAnEnvironment(environmentIds: ReadonlyArray<EnvironmentId>): boolean {
+  return useAtomValue(environmentManagedAtom(environmentIdsKey(environmentIds)));
+}
 
 /** Who this client is paired as, on each environment that names its people. */
 export function useEnvironmentPersons(

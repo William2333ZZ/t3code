@@ -75,6 +75,8 @@ import {
   FolderPlusIcon,
   PlusIcon,
   SettingsIcon,
+  UserRoundCheckIcon,
+  UsersRoundIcon,
 } from "lucide-react";
 import {
   useEffect,
@@ -166,6 +168,8 @@ import {
   readEnvironmentPeople,
   readEnvironmentPerson,
   readEnvironmentScope,
+  useEnvironmentPersons,
+  useManagesAnEnvironment,
   useEnvironmentScope,
 } from "../state/session";
 import { appAtomRegistry } from "../rpc/atomRegistry";
@@ -190,6 +194,7 @@ import {
 import {
   applySidebarThreadDrop,
   filterSidebarV2VisibleThreads,
+  filterThreadsToOwner,
   groupSidebarThreadsByProject,
   sidebarFolderExpansionKeys,
   buildBulkTitleRegenerationContextMenuItem,
@@ -354,6 +359,7 @@ const SETTLED_TAIL_PAGE_COUNT = 25;
 const SETTLED_SHELF_EXPANDED_KEY = "t3code:sidebar:settled-expanded";
 const SNOOZED_SHELF_EXPANDED_KEY = "t3code:sidebar:snoozed-expanded";
 const WORKING_SHELF_EXPANDED_KEY = "t3code:sidebar:working-expanded";
+const SIDEBAR_MINE_ONLY_KEY = "t3code:sidebar:mine-only";
 
 const inboxReturns = createInboxReturnTracker();
 
@@ -1128,7 +1134,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             ),
           ),
         );
-  const threads = useQuietThreadShells();
+  const everyonesThreads = useQuietThreadShells();
+  const personByEnvironment = useEnvironmentPersons(connectedEnvironmentIds);
+  const managesAnEnvironment = useManagesAnEnvironment(connectedEnvironmentIds);
+  // A manager is sent everyone's threads; their own is what they see until they ask for more.
+  const [mineOnly, setMineOnly] = useLocalStorage(SIDEBAR_MINE_ONLY_KEY, true, Schema.Boolean);
+  const threads = mineOnly
+    ? filterThreadsToOwner(everyonesThreads, personByEnvironment)
+    : everyonesThreads;
   const promotingDraftThreadKeys = usePromotingDraftThreadKeys();
   const listedThreads =
     promotingDraftThreadKeys.length === 0
@@ -3093,6 +3106,21 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
           <SidebarGroup className="z-[1]">
             <SidebarThreadHeader
               hasProjects={projectGroups.length > 0}
+              ownerScope={
+                managesAnEnvironment ? (
+                  <SidebarHeaderIconButton
+                    label={
+                      mineOnly
+                        ? gt("Showing your threads. Show everyone's")
+                        : gt("Showing everyone's threads. Show only yours")
+                    }
+                    aria-pressed={mineOnly}
+                    onClick={() => setMineOnly(!mineOnly)}
+                  >
+                    {mineOnly ? <UserRoundCheckIcon /> : <UsersRoundIcon />}
+                  </SidebarHeaderIconButton>
+                ) : null
+              }
               projectScope={
                 <Combobox
                   items={projectScopeItems}
