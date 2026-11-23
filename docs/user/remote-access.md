@@ -575,6 +575,11 @@ A device paired through that link is Alice's. Every thread started from it shows
 sidebar, and so do the subagents and threads its agents start. Once you are paired as someone, the
 people button beside the sidebar search switches between everyone's threads and yours.
 
+To change whose thread it is, right-click it and open **Owner**. You can make a thread that has no
+owner yours, hand one of yours to anyone paired with the machine, or leave it with no owner. You
+cannot take or reassign someone else's thread; a device paired with no name, such as the machine
+itself, can reassign any of them.
+
 This says whose work a thread is; it does not hide anything. Everyone paired with the machine can
 still open every thread, answer its agent, and use its terminal. Share a machine only with people
 you would give your own access to.

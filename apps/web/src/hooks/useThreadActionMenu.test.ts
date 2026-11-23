@@ -45,6 +45,8 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("../state/session", () => ({
   readEnvironmentScope: (environmentId: string, scope: string) =>
     scope === AuthOrchestrationOperateScope && state.granted.has(environmentId),
+  readEnvironmentPerson: () => undefined,
+  readEnvironmentPeople: () => [],
 }));
 vi.mock("../state/entities", () => ({
   readEnvironmentServerConfigLoaded: () => true,
@@ -59,6 +61,7 @@ vi.mock("../state/entities", () => ({
     runtime: null,
     latestRun: null,
   }),
+  readThreadShells: () => [],
   useProjects: () => [{ id: "project", environmentId: "secondary" }],
 }));
 vi.mock("../state/environments", () => ({ usePrimaryEnvironmentId: () => "primary" }));

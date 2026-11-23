@@ -325,6 +325,9 @@ export function useThreadActions() {
   const setThreadAutoSettleMutation = useOrchestrationCommand(threadEnvironment.setAutoSettle, {
     reportFailure: false,
   });
+  const setThreadOwnerMutation = useOrchestrationCommand(threadEnvironment.setOwner, {
+    reportFailure: false,
+  });
   const reorderPinnedThreadMutation = useOrchestrationCommand(threadEnvironment.reorderPin, {
     reportFailure: false,
   });
@@ -776,6 +779,12 @@ export function useThreadActions() {
     });
   };
 
+  const setThreadOwner = (target: ScopedThreadRef, person: string | null) =>
+    setThreadOwnerMutation({
+      environmentId: target.environmentId,
+      input: { threadId: target.threadId, person },
+    });
+
   const sendPin = async (target: ScopedThreadRef, opts: { orderKey?: string } = {}) => {
     if (!readEnvironmentServerConfigLoaded(target.environmentId)) {
       return AsyncResult.failure(
@@ -1061,6 +1070,7 @@ export function useThreadActions() {
     reorderActiveThread,
     markThreadUnread,
     setThreadAutoSettle,
+    setThreadOwner,
     turnThreadIntoProject: (target: ScopedThreadRef) =>
       createProjectFromThread({
         environmentId: target.environmentId,

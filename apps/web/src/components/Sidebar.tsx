@@ -150,6 +150,7 @@ import {
 } from "../state/environments";
 import {
   readThreadShell,
+  readThreadShells,
   useAllEnvironmentProjectSnapshotsReady,
   useDelegatedUnderParent,
   useProjects,
@@ -163,7 +164,13 @@ import { threadEnvironment } from "../state/threads";
 import { useOlderSettledShelf, useOlderSettledShelfGrowth } from "../state/olderSettledShelf";
 import { useThreadSearch } from "../state/queries";
 import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { readEnvironmentScope, useEnvironmentPersons, useEnvironmentScope } from "../state/session";
+import {
+  readEnvironmentPeople,
+  readEnvironmentPerson,
+  readEnvironmentScope,
+  useEnvironmentPersons,
+  useEnvironmentScope,
+} from "../state/session";
 import { appAtomRegistry } from "../rpc/atomRegistry";
 import { canShareWithGuestAtom } from "./chat/guestShareAvailability";
 import { openGuestShareDialog } from "./chat/guestShareDialogState";
@@ -179,6 +186,8 @@ import { ProjectRowActions } from "./ProjectComboboxRow";
 import {
   buildDraftActionMenuItems,
   buildThreadActionMenuItems,
+  knownThreadOwners,
+  threadOwnerActionTarget,
   threadActionRequiresOperate,
 } from "./threadActionMenu.logic";
 import {
@@ -952,6 +961,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     unpinThread,
     confirmAndUnpinThread,
     setThreadAutoSettle,
+    setThreadOwner,
     turnThreadIntoProject,
     reorderPinnedThread,
     reorderActiveThread,
@@ -2699,6 +2709,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 projectRef.projectId === thread.projectId,
             ),
           ) ?? null;
+        const me = readEnvironmentPerson(thread.environmentId);
+        const people = knownThreadOwners(
+          readThreadShells(),
+          thread.environmentId,
+          me,
+          readEnvironmentPeople(thread.environmentId),
+        );
+        const ownerMenu = people.length === 0 ? undefined : { current: thread.owner, me, people };
         const clicked = await settlePromise(() =>
           api.contextMenu.show(
             buildThreadActionMenuItems({
@@ -2726,6 +2744,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                 canShareWithGuestAtom(threadRef.environmentId),
               ),
               canTurnIntoProject: canTurnThreadIntoProject(threadRef),
+              owner: ownerMenu,
               canRename: !fromSearch,
               supports: {
                 settlement: configLoaded,
@@ -2742,6 +2761,21 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         );
         if (clicked._tag === "Failure" || clicked.value === null) return;
         if (threadActionRequiresOperate(clicked.value) && !checkThreadOperations([thread])) return;
+        const nextOwner = threadOwnerActionTarget(clicked.value, me);
+        if (nextOwner !== undefined) {
+          const result = await setThreadOwner(threadRef, nextOwner);
+          if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+            const error = squashAtomCommandFailure(result);
+            toastManager.add(
+              stackedThreadToast({
+                type: "error",
+                title: gt("Failed to change the owner"),
+                description: thrownErrorMessage(error, m) ?? gt("An error occurred."),
+              }),
+            );
+          }
+          return;
+        }
         if (clicked.value?.startsWith("snooze:")) {
           const preset =
             clicked.value === "snooze:custom"

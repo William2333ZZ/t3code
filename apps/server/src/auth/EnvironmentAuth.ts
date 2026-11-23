@@ -822,6 +822,11 @@ export const make = Effect.gen(function* () {
     people
       .get("session", session.sessionId)
       .pipe(Effect.map((person): S => (person === undefined ? session : { ...session, person })));
+  const knownPeople = Effect.zipWith(
+    people.list("session"),
+    people.list("pairing-link"),
+    (sessions, links) => [...new Set([...sessions.values(), ...links.values()])].toSorted(),
+  );
   /** A session paired through a person's link is that person's. */
   const bindSessionToLinkPerson = Effect.fnUntraced(function* (
     sessionId: AuthSessionId,
@@ -944,8 +949,9 @@ export const make = Effect.gen(function* () {
 
   const getSessionState: EnvironmentAuth["Service"]["getSessionState"] = (request) =>
     authenticateRequest(request).pipe(
+      Effect.zip(knownPeople),
       Effect.map(
-        (session) =>
+        ([session, everyone]) =>
           ({
             authenticated: true,
             auth: descriptor,
@@ -953,6 +959,7 @@ export const make = Effect.gen(function* () {
             sessionMethod: session.method,
             ...(session.expiresAt ? { expiresAt: DateTime.toUtc(session.expiresAt) } : {}),
             ...(session.person === undefined ? {} : { person: session.person }),
+            ...(everyone.length === 0 ? {} : { people: everyone }),
           }) satisfies AuthSessionState,
       ),
       Effect.catchIf(isServerAuthCredentialError, () =>

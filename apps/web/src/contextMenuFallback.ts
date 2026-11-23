@@ -121,6 +121,20 @@ const ICON_PATHS: Record<string, ReadonlyArray<{ tag: string; attrs: Record<stri
     },
     { tag: "circle", attrs: { cx: "12", cy: "12", r: "3" } },
   ],
+  "user-round": [
+    { tag: "circle", attrs: { cx: "12", cy: "8", r: "5" } },
+    { tag: "path", attrs: { d: "M20 21a8 8 0 0 0-16 0" } },
+  ],
+  "user-check": [
+    { tag: "path", attrs: { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" } },
+    { tag: "circle", attrs: { cx: "9", cy: "7", r: "4" } },
+    { tag: "path", attrs: { d: "m16 11 2 2 4-4" } },
+  ],
+  "user-minus": [
+    { tag: "path", attrs: { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" } },
+    { tag: "circle", attrs: { cx: "9", cy: "7", r: "4" } },
+    { tag: "line", attrs: { x1: "22", x2: "16", y1: "11", y2: "11" } },
+  ],
   "user-plus": [
     { tag: "path", attrs: { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" } },
     { tag: "circle", attrs: { cx: "9", cy: "7", r: "4" } },

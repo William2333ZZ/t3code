@@ -23,6 +23,10 @@ export type ThreadActionMenuId =
   | "rename"
   | "regenerate-title"
   | "mark-unread"
+  | "owner"
+  | "owner:claim"
+  | "owner:release"
+  | `owner:give:${string}`
   | "share-guest"
   | "copy"
   | "copy-path"
@@ -93,6 +97,75 @@ export function buildDraftActionMenuItems(
   ];
 }
 
+export interface ThreadOwnerMenuState {
+  /** Whose thread this is, or null when it is no one's. */
+  readonly current: string | null;
+  /** Who this client is paired as; undefined for a session that is no one's and manages all. */
+  readonly me: string | undefined;
+  /** People the thread could be handed to. */
+  readonly people: ReadonlyArray<string>;
+}
+
+/**
+ * Everyone this client knows of on an environment: the people its server says are paired, the
+ * owners of its threads, and the person it is paired as. Empty means it does not name its people.
+ */
+export function knownThreadOwners(
+  threads: ReadonlyArray<{ readonly environmentId: string; readonly owner: string | null }>,
+  environmentId: string,
+  me: string | undefined,
+  paired: ReadonlyArray<string> = [],
+): ReadonlyArray<string> {
+  const people = new Set<string>(me === undefined ? paired : [me, ...paired]);
+  for (const thread of threads) {
+    if (thread.environmentId === environmentId && thread.owner !== null) people.add(thread.owner);
+  }
+  return [...people].toSorted();
+}
+
+/**
+ * The owner changes this client may make, mirroring the server's rule: a session that is no one's
+ * manages every thread; a person hands on or releases their own and claims one nobody owns.
+ */
+export function buildThreadOwnerMenuItems(
+  owner: ThreadOwnerMenuState,
+  resolve: MessageResolver = m,
+): ReadonlyArray<ContextMenuItem<ThreadActionMenuId>> {
+  const manages = owner.me === undefined || owner.current === owner.me;
+  const items: Array<ContextMenuItem<ThreadActionMenuId>> = [];
+  if (owner.me !== undefined && owner.current === null) {
+    items.push({ id: "owner:claim", label: resolve(msg("Make it mine")), icon: "user-check" });
+  }
+  if (manages) {
+    for (const person of owner.people) {
+      if (person === owner.current) continue;
+      items.push({
+        id: `owner:give:${person}`,
+        label: resolve(msg("Hand to {person}", { person })),
+        icon: "user-plus",
+      });
+    }
+    if (owner.current !== null) {
+      items.push({
+        id: "owner:release",
+        label: resolve(msg("Leave with no owner")),
+        icon: "user-minus",
+      });
+    }
+  }
+  return items;
+}
+
+/** The owner a chosen menu action asks for (null releases the thread), or undefined for other actions. */
+export function threadOwnerActionTarget(
+  action: ThreadActionMenuId,
+  me: string | undefined,
+): string | null | undefined {
+  if (action === "owner:release") return null;
+  if (action === "owner:claim") return me;
+  return action.startsWith("owner:give:") ? action.slice("owner:give:".length) : undefined;
+}
+
 export interface ThreadActionMenuState {
   readonly canOperate: boolean;
   readonly canFind?: boolean;
@@ -119,6 +192,8 @@ export interface ThreadActionMenuState {
     readonly titleRegeneration: boolean;
   };
   readonly snoozePresets: ReadonlyArray<SnoozePreset>;
+  /** Set where the environment names its people; absent, the menu has no owner entry. */
+  readonly owner?: ThreadOwnerMenuState | undefined;
   /** Guest links need their own grant, so the caller checks it instead of `canOperate`. */
   readonly canShareWithGuest?: boolean;
   /** A No project thread with its own folder, on a server that can promote it. */
@@ -145,6 +220,10 @@ export function buildThreadActionMenuItems(
   state: ThreadActionMenuState,
   resolve: MessageResolver = m,
 ): ReadonlyArray<ContextMenuItem<ThreadActionMenuId>> {
+  const ownerItems =
+    state.owner === undefined || !state.canOperate
+      ? []
+      : buildThreadOwnerMenuItems(state.owner, resolve);
   const items: ReadonlyArray<ContextMenuItem<ThreadActionMenuId>> = [
     ...(state.canFind
       ? [{ id: "find" as const, label: resolve(msg("Find in thread")), icon: "text-search" }]
@@ -220,6 +299,18 @@ export function buildThreadActionMenuItems(
         ]
       : []),
     { id: "mark-unread", label: resolve(msg("Mark unread")), icon: "mail-open" },
+    ...(ownerItems.length > 0
+      ? [
+          {
+            id: "owner" as const,
+            label: state.owner?.current
+              ? resolve(msg("Owner: {person}", { person: state.owner.current }))
+              : resolve(msg("Owner")),
+            icon: "user-round",
+            children: ownerItems,
+          },
+        ]
+      : []),
     ...(state.canShareWithGuest
       ? [{ id: "share-guest" as const, label: resolve(msg("Share with guest")), icon: "user-plus" }]
       : []),

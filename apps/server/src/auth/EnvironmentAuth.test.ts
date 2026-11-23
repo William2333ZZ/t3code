@@ -1181,7 +1181,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
           yield* serverAuth.getSessionState(
             makeCookieRequest(sessions.cookieName, browser.sessionToken),
           ),
-        ).toMatchObject({ authenticated: true, person: "alice" });
+        ).toMatchObject({ authenticated: true, person: "alice", people: ["alice"] });
 
         const bobLink = yield* serverAuth.createPairingLink({ person: "bob" });
         const bearer = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(

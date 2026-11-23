@@ -546,6 +546,8 @@ export const AuthSessionState = Schema.Struct({
   expiresAt: Schema.optionalKey(Schema.DateTimeUtc),
   /** Who this session belongs to. Absent for the environment's own sessions and older servers. */
   person: Schema.optionalKey(Schema.String),
+  /** Everyone a device or link here is paired as, so a thread can be handed to one of them. */
+  people: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 export type AuthSessionState = typeof AuthSessionState.Type;
 

@@ -20,7 +20,9 @@ import { msg } from "gt-react";
 import { pickSnoozePreset, resolveSnoozePresets } from "../components/Sidebar.snooze";
 import {
   buildThreadActionMenuItems,
+  knownThreadOwners,
   threadActionRequiresOperate,
+  threadOwnerActionTarget,
   type ThreadActionMenuId,
 } from "../components/threadActionMenu.logic";
 import { titleRegenerationToast } from "../components/threadTitleRegenerationToast";
@@ -30,11 +32,16 @@ import { m } from "../i18n/messages";
 import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import { threadEnvironment } from "../state/threads";
 import { useOrchestrationCommand } from "../state/use-orchestration-command";
-import { readEnvironmentScope } from "../state/session";
+import {
+  readEnvironmentPeople,
+  readEnvironmentPerson,
+  readEnvironmentScope,
+} from "../state/session";
 import {
   readEnvironmentServerConfigLoaded,
   readEnvironmentSupportsAutoSettleOptOut,
   readThreadShell,
+  readThreadShells,
   useProjects,
 } from "../state/entities";
 import { usePrimaryEnvironmentId } from "../state/environments";
@@ -87,6 +94,7 @@ export function useThreadActionMenu(input: {
     pinThread,
     confirmAndUnpinThread,
     setThreadAutoSettle,
+    setThreadOwner,
     archiveThread,
     deleteThread,
     markThreadUnread,
@@ -138,6 +146,14 @@ export function useThreadActionMenu(input: {
       };
       const isRegeneratingTitle = thread.titleRegeneration != null;
       const snoozePresets = resolveSnoozePresets(now, timestampFormat, threadRef.environmentId);
+      const me = readEnvironmentPerson(threadRef.environmentId);
+      const people = knownThreadOwners(
+        readThreadShells(),
+        threadRef.environmentId,
+        me,
+        readEnvironmentPeople(threadRef.environmentId),
+      );
+      const ownerMenu = people.length === 0 ? undefined : { current: thread.owner, me, people };
       const items = buildThreadActionMenuItems({
         canOperate: readEnvironmentScope(threadRef.environmentId, AuthOrchestrationOperateScope),
         canFind: onFind !== undefined,
@@ -154,6 +170,7 @@ export function useThreadActionMenu(input: {
         snoozePresets,
         canShareWithGuest,
         canTurnIntoProject: canTurnThreadIntoProject(threadRef),
+        owner: ownerMenu,
       });
       const clicked = await settlePromise(() => api.contextMenu.show(items, position));
       if (clicked._tag === "Failure" || clicked.value === null) return;
@@ -166,6 +183,14 @@ export function useThreadActionMenu(input: {
           m(msg("Thread action unavailable")),
           new Error(m(msg("This connection cannot change threads."))),
         );
+        return;
+      }
+      const nextOwner = threadOwnerActionTarget(action, me);
+      if (nextOwner !== undefined) {
+        const result = await setThreadOwner(threadRef, nextOwner);
+        if (result._tag === "Failure" && !isAtomCommandInterrupted(result)) {
+          failureToast(m(msg("Failed to change the owner")), squashAtomCommandFailure(result));
+        }
         return;
       }
       if (action.startsWith("snooze:")) {

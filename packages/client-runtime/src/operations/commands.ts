@@ -648,6 +648,21 @@ export const reorderActiveThread = Effect.fn("EnvironmentCommands.reorderActiveT
   });
 });
 
+export interface SetThreadOwnerInput extends ThreadCommandInput {
+  /** Null leaves the thread with no owner. */
+  readonly person: string | null;
+}
+export const setThreadOwner = Effect.fn("EnvironmentCommands.setThreadOwner")(function* (
+  input: SetThreadOwnerInput,
+) {
+  return yield* dispatch({
+    type: "thread.owner.set",
+    commandId: yield* allocateCommandId(input),
+    threadId: input.threadId,
+    person: input.person,
+  });
+});
+
 export const unpinThread = Effect.fn("EnvironmentCommands.unpinThread")(function* (
   input: UnpinThreadInput,
 ) {

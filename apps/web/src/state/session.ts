@@ -49,6 +49,18 @@ export function readEnvironmentCanConfigureRelay(environmentId: EnvironmentId): 
   return sessionHasScope(result, AuthRelayConfigureScope);
 }
 
+/** Who this client is paired as on an environment, if it names its people. */
+export function readEnvironmentPerson(environmentId: EnvironmentId): string | undefined {
+  const result = appAtomRegistry.get(environmentSession.sessionStateAtom(environmentId));
+  return AsyncResult.getOrElse(result, () => null)?.person;
+}
+
+/** Everyone paired on an environment, as its server last reported. */
+export function readEnvironmentPeople(environmentId: EnvironmentId): ReadonlyArray<string> {
+  const result = appAtomRegistry.get(environmentSession.sessionStateAtom(environmentId));
+  return AsyncResult.getOrElse(result, () => null)?.people ?? [];
+}
+
 export function sessionHasScope(
   result: AsyncResult.AsyncResult<AuthSessionState, unknown>,
   scope: AuthEnvironmentScope,

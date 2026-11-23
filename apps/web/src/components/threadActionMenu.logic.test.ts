@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { buildThreadActionMenuItems, type ThreadActionMenuState } from "./threadActionMenu.logic";
+import {
+  buildThreadActionMenuItems,
+  buildThreadOwnerMenuItems,
+  knownThreadOwners,
+  threadOwnerActionTarget,
+  type ThreadActionMenuState,
+} from "./threadActionMenu.logic";
 
 const baseState: ThreadActionMenuState = {
   canOperate: true,
@@ -78,5 +84,62 @@ describe("buildThreadActionMenuItems", () => {
   it("disables only rename where no inline title editor exists", () => {
     const items = buildThreadActionMenuItems({ ...baseState, canRename: false });
     expect(items.filter((item) => item.disabled).map((item) => item.id)).toEqual(["rename"]);
+  });
+});
+
+describe("thread owner menu", () => {
+  const people = ["alice", "bob", "carol"];
+  it.each([
+    // A session that is no one's manages every thread.
+    {
+      current: "alice",
+      me: undefined,
+      ids: ["owner:give:bob", "owner:give:carol", "owner:release"],
+    },
+    {
+      current: null,
+      me: undefined,
+      ids: ["owner:give:alice", "owner:give:bob", "owner:give:carol"],
+    },
+    // My thread: hand it on or release it.
+    { current: "alice", me: "alice", ids: ["owner:give:bob", "owner:give:carol", "owner:release"] },
+    // Nobody's: claim it, but not for someone else.
+    { current: null, me: "bob", ids: ["owner:claim"] },
+    // Someone else's: nothing the server would accept.
+    { current: "alice", me: "bob", ids: [] },
+  ])("owner $current seen by $me offers $ids", ({ ids, ...owner }) => {
+    expect(buildThreadOwnerMenuItems({ ...owner, people }).map((item) => item.id)).toEqual(ids);
+  });
+
+  it("leaves the entry out where there is nothing to offer, or no permission to change threads", () => {
+    const ids = (state: ThreadActionMenuState) =>
+      buildThreadActionMenuItems(state).map((item) => item.id);
+    const owner = { current: null, me: "bob", people };
+    expect(ids({ ...baseState, owner })).toContain("owner");
+    expect(ids({ ...baseState, owner, canOperate: false })).not.toContain("owner");
+    expect(ids({ ...baseState, owner: { current: "alice", me: "bob", people } })).not.toContain(
+      "owner",
+    );
+    expect(ids(baseState)).not.toContain("owner");
+  });
+
+  it("knows the people of one environment, and what each action asks for", () => {
+    const threads = [
+      { environmentId: "shared", owner: "carol" },
+      { environmentId: "shared", owner: null },
+      { environmentId: "other", owner: "dave" },
+    ];
+    expect(knownThreadOwners(threads, "shared", "alice")).toEqual(["alice", "carol"]);
+    // Someone paired who has no thread yet can still be handed one.
+    expect(knownThreadOwners(threads, "shared", "alice", ["bob"])).toEqual([
+      "alice",
+      "bob",
+      "carol",
+    ]);
+    expect(knownThreadOwners(threads, "solo", undefined)).toEqual([]);
+    expect(threadOwnerActionTarget("owner:claim", "bob")).toBe("bob");
+    expect(threadOwnerActionTarget("owner:release", "bob")).toBeNull();
+    expect(threadOwnerActionTarget("owner:give:carol", "bob")).toBe("carol");
+    expect(threadOwnerActionTarget("pin", "bob")).toBeUndefined();
   });
 });
