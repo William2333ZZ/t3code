@@ -42,25 +42,26 @@ offers to set up agents on the local machine.
 
 ## What is different
 
-|             | Upstream                                              | This fork                                                                                                                                            |
-| ----------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pairing     | A link has a label                                    | A link can also name a person: `t3 pair --person alice`, or **Whose device** in Settings → Sharing & access                                          |
-| Sessions    | Know their device                                     | Also know their person; `GET /api/auth/session` returns it                                                                                           |
-| Threads     | `createdBy` is user, agent or system                  | Also `owner: { person }`, stamped by the server from the creating session                                                                            |
-| Sidebar     | —                                                     | Shows `@person` on a thread; a button switches between everyone's threads and yours                                                                  |
-| Thread menu | —                                                     | **Owner**: make an unowned thread yours, hand yours to someone paired on the machine, or leave it with no owner                                      |
-| Employee    | An environment is a machine                           | An environment can name the employee its agent works as (`T3CODE_EMPLOYEE_FILE`); clients show a card with the name, title and what to bring to them |
-| Agents      | An agent does not know who it works for               | `t3 thread owner` in the agent's shell prints the owner of the thread it is working in                                                               |
-| Proxies     | The server's own URL follows `X-Forwarded-Proto` only | Also follows `X-Forwarded-Host`, so a desktop or mobile client can sign in through a port forward that renames the host (a sandbox, a container)     |
+|                       | Upstream                                              | This fork                                                                                                                                            |
+| --------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pairing               | A link has a label                                    | A link can also name a person: `t3 pair --person alice`, or **Whose device** in Settings → Sharing & access                                          |
+| Sessions              | Know their device                                     | Also know their person; `GET /api/auth/session` returns it                                                                                           |
+| Threads               | `createdBy` is user, agent or system                  | Also `owner: { person }`, stamped by the server from the creating session                                                                            |
+| Threads a person sees | Every thread                                          | Only their own, enforced by the server for every request; a device paired with no name sees all and shows `@person`                                  |
+| Thread menu           | —                                                     | **Owner**: make an unowned thread yours, hand yours to someone paired on the machine, or leave it with no owner                                      |
+| Employee              | An environment is a machine                           | An environment can name the employee its agent works as (`T3CODE_EMPLOYEE_FILE`); clients show a card with the name, title and what to bring to them |
+| Agents                | An agent does not know who it works for               | `t3 thread owner` in the agent's shell prints the owner of the thread it is working in                                                               |
+| Proxies               | The server's own URL follows `X-Forwarded-Proto` only | Also follows `X-Forwarded-Host`, so a desktop or mobile client can sign in through a port forward that renames the host (a sandbox, a container)     |
 
 User guide: [Share one machine between people](docs/user/remote-access.md#share-one-machine-between-people).
 Design notes: [A person is a name on a session, not an account](docs/internals/environment-auth.md#a-person-is-a-name-on-a-session-not-an-account).
 
 ## What it does not do
 
-- **It does not hide threads.** Ownership is attribution. Everyone paired with the machine can
-  open every thread.
-- Approval requests are not routed to the owner.
+- **It does not keep people's work apart.** A person sees and answers only their own threads, but
+  every thread runs as the same user on the same machine; an agent can read what another thread
+  left on disk. The fence also misses requests that reach a thread through another id (a terminal,
+  a run, a path in its worktree) and lists that only mention threads (scheduled tasks).
 - Messages and approvals do not record who sent them.
 - Threads a scheduled task starts have no owner.
 - The mobile app does not show owners.
@@ -90,6 +91,7 @@ a merge conflict can be judged quickly.
 | `apps/web/src/components/chat/DraftHeroHeadline.tsx`                                                                                                                          | shows the employee card above a new thread                                                     |
 | `apps/server/src/cli/thread.ts`                                                                                                                                               | registers `t3 thread owner`                                                                    |
 | `apps/server/src/requestUrl.ts`                                                                                                                                               | the request URL also honors `X-Forwarded-Host`                                                 |
+| `apps/server/src/ws.ts`, `apps/server/src/orchestration-v2/http.ts`                                                                                                           | handlers wrapped by `threadConfinement` for a session that has a person                        |
 | `apps/web/src/i18n/translations/*.json`                                                                                                                                       | twelve new strings                                                                             |
 
 New files: `packages/contracts/src/person.ts`, `apps/server/src/auth/PersonBindings.ts`,

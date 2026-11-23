@@ -250,7 +250,7 @@ credentials, and agent work stay on the remote machine.
 
 The remote host must be Linux or an Apple Silicon Mac with `curl` or `wget`,
 `tar`, `sha256sum` or `shasum`, and [provider setup](./install.md#providers).
-The first launch downloads SuperSteward's server to `~/.t3/runtime` on the host, so
+The first launch downloads SuperSteward's server to `~/.supersteward/runtime` on the host, so
 it takes longer than later ones.
 Provider CLIs must be on the `PATH` of a non-interactive login shell there;
 check with:
@@ -424,7 +424,7 @@ Linked environments is a beta. Turn it on for both machines in **Settings →
 Labs**; on mobile, **Settings → Labs** lists each connected machine. On a
 headless server, open its address in a browser and pair to reach its **Settings
 → Labs**, or add `"linkedEnvironmentsEnabled": true` to `settings.json` in its
-`userdata` directory, such as `~/.t3/userdata/settings.json`; a running server
+`userdata` directory, such as `~/.supersteward/userdata/settings.json`; a running server
 picks it up. While it is
 off on either machine, agents start nothing over a link between them. A task
 already running on the other machine still finishes, and if that machine has it
@@ -571,22 +571,24 @@ t3 pair --person alice
 In **Settings → Sharing & access**, the same field is **Whose device** in the pairing dialog.
 Names are lower-case letters, digits, dots, dashes and underscores.
 
-A device paired through that link is Alice's. Every thread started from it shows `@alice` in the
-sidebar, and so do the subagents and threads its agents start. Once you are paired as someone, the
-people button beside the sidebar search switches between everyone's threads and yours.
+A device paired through that link is Alice's. Every thread started from it is hers, and so are
+the subagents and threads its agents start. Alice's devices show only her threads: other people's
+do not appear in her sidebar, her search or her notifications, and she cannot open, answer or stop
+them. A device paired with no name, such as the machine itself, sees every thread and shows
+`@alice` on hers.
 
-To change whose thread it is, right-click it and open **Owner**. You can make a thread that has no
-owner yours, hand one of yours to anyone paired with the machine, or leave it with no owner. You
-cannot take or reassign someone else's thread; a device paired with no name, such as the machine
-itself, can reassign any of them.
+To change whose thread it is, right-click it and open **Owner**. You can hand one of yours to
+anyone paired with the machine, or leave it with no owner; either way it leaves your list. A device
+paired with no name can reassign any thread, and is the only one that sees threads with no owner.
 
 An agent can find out whose work it is doing: `t3 thread owner`, run from its shell, prints the
 thread's owner, or nothing when there is none. Mention it in the agent's instructions if its
 commits or pull requests should name that person.
 
-This says whose work a thread is; it does not hide anything. Everyone paired with the machine can
-still open every thread, answer its agent, and use its terminal. Share a machine only with people
-you would give your own access to.
+This keeps people out of each other's conversations. It does not keep their work apart: every
+thread runs as the same user on the same machine, so an agent working for one person can read the
+files, checkouts and credentials another person's thread left there. Share a machine only between
+people who may see each other's work, and give anyone else a machine of their own.
 
 Someone paired under a name can pair more of their own devices, but not create a link in another
 name. Links made from the machine itself, with `t3 pair` or from the desktop app, can name anyone.

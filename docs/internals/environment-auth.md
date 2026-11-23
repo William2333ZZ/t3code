@@ -58,10 +58,19 @@ is, so a client cannot claim one
 Work an agent derives from a thread keeps its owner; a person's fork is the forker's. A session
 with no person is the environment's own and may reassign any thread.
 
-**Ownership is attribution, not isolation.** No read path filters by owner, and the sidebar's
-"yours" view is a client-side filter. Making it a boundary means fencing every thread read
-(streams, history, search, MCP, peer links) the way `linkOrigin` fences writes; a partial fence
-would look like privacy without being it.
+**A person's session is confined to that person's threads**
+([threadConfinement](../../apps/server/src/orchestration-v2/threadConfinement.ts)). The fence is
+on the transport, not in each handler: every WebSocket RPC a session with a person calls has its
+input checked for thread ids and its answer filtered, and the orchestration HTTP routes do the
+same, so a new RPC that takes a `threadId` is fenced without anyone remembering to. A thread an
+agent started has no owner of its own and follows its root. Sessions with no person are not
+wrapped at all.
+
+What the fence does not cover: requests that reach a thread through another id (a terminal, a run,
+a workflow, a path inside its worktree), lists that only mention threads (scheduled tasks, linked
+issues, the counts of older settled threads), the MCP tools an agent uses, and peer links. And it
+is a fence between conversations, not between people's work: threads share one machine and one
+user, so an agent can read what another thread wrote to disk.
 
 The bindings live in a table the service creates itself rather than in a numbered migration. A
 fork that tracks upstream cannot number its own: the migrator skips every id up to the highest a

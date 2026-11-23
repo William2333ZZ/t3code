@@ -184,6 +184,7 @@ import * as ProjectStore from "./orchestration-v2/ProjectStore.ts";
 import * as ThreadSearch from "./orchestration-v2/ThreadSearch.ts";
 import * as OrchestrationEventStore from "./persistence/OrchestrationEventStore.ts";
 import { userFacingDispatchErrorMessage } from "./orchestration-v2/UserFacingErrors.ts";
+import { makeThreadConfinement } from "./orchestration-v2/threadConfinement.ts";
 import { ownerChangeRefusal } from "./orchestration-v2/threadOwner.ts";
 import * as ProviderRegistry from "./provider/ProviderRegistry.ts";
 import * as SecretCheck from "./secrets/SecretCheck.ts";
@@ -3742,9 +3743,17 @@ export const layerWsRpc = (
             ),
           ),
       });
-      const splitHandlers: Pick<typeof handlers, SplitWsRpc["_tag"]> = handlers;
+      // A session with no person runs the environment and sees every thread.
+      const confined =
+        currentSession.person === undefined
+          ? handlers
+          : makeThreadConfinement({
+              person: currentSession.person,
+              getThreadShell: threadManagement.getThreadShell,
+            }).handlers(handlers);
+      const splitHandlers: Pick<typeof handlers, SplitWsRpc["_tag"]> = confined;
       const otherHandlers: Pick<typeof handlers, Exclude<ServerWsRpc, SplitWsRpc>["_tag"]> =
-        handlers;
+        confined;
       return Context.merge(
         yield* SplitWsRpcGroup.toHandlers(splitHandlers),
         yield* OtherWsRpcGroup.toHandlers(otherHandlers),

@@ -591,20 +591,6 @@ export async function deleteSelectedThreadEntries<
 }
 
 /**
- * The threads that are this person's. An environment missing from `personByEnvironment` does not
- * name its people, or paired this client as no one, so all of its threads stay.
- */
-export function filterThreadsToOwner<
-  T extends Pick<SidebarThreadSummary, "environmentId" | "owner">,
->(threads: readonly T[], personByEnvironment: ReadonlyMap<string, string>): readonly T[] {
-  if (personByEnvironment.size === 0) return threads;
-  return threads.filter((thread) => {
-    const person = personByEnvironment.get(thread.environmentId);
-    return person === undefined || thread.owner === person;
-  });
-}
-
-/**
  * `delegatedUnderParent` holds the tasks linked environments run for a thread
  * the sidebar lists, by thread key; they show under that thread, as subagents do.
  */
