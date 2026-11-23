@@ -6,7 +6,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 // A JSON file naming the employee this environment's agent works as. Whoever provisions the
-// workstation writes it; nothing in T3 Code does.
+// workstation writes it; nothing in SuperSteward does.
 const employeeFile = Config.String("T3CODE_EMPLOYEE_FILE").pipe(Config.option);
 
 const decodeEmployee = Schema.decodeUnknownEffect(Schema.fromJsonString(EnvironmentEmployee));

@@ -1,11 +1,44 @@
-# SuperSteward fork of T3 Code
+# SuperSteward
 
-This is a fork of [pingdotgg/t3code](https://github.com/pingdotgg/t3code) (MIT). It follows
-upstream `main` and adds what a team needs to share one T3 Code environment: every paired device
-belongs to a named person, and every thread records whose work it is.
+SuperSteward is a fork of [T3 Code](https://github.com/pingdotgg/t3code) (MIT, © T3 Tools Inc.; the
+license is kept in `LICENSE`). It follows upstream `main` and adds what a team needs to share one
+environment: every paired device belongs to a named person, and every thread records whose work
+it is.
 
-"T3 Code" and its logo belong to their owners. This fork has not been renamed yet; it is not an
-official build and is not supported by the T3 Code maintainers.
+It is not an official T3 Code build and is not supported by the T3 Code maintainers. The name
+"T3 Code" and its logo belong to their owners and are not used by this fork.
+
+## Brand and identity
+
+The fork has its own name, mark and app identity, so it can be installed next to the official app:
+
+|                 | Upstream                 | This fork                      |
+| --------------- | ------------------------ | ------------------------------ |
+| Name            | T3 Code                  | SuperSteward                   |
+| Mark            | `assets/*/app-icon.icon` | `assets/supersteward/mark.svg` |
+| Desktop app id  | `com.t3tools.t3code`     | `com.supersteward.app`         |
+| Link scheme     | `t3code://`              | `supersteward://`              |
+| Data directory  | `~/.t3`                  | `~/.supersteward`              |
+| Usage reporting | On unless turned off     | Off unless turned on           |
+
+Unchanged on purpose: the `t3` command, `T3CODE_*` environment variables, the `@t3tools` package
+scope and wire values such as the `t3code` attribution. Nobody sees them, and renaming them would
+make every merge from upstream harder.
+
+The rename is three scripts, not hand edits, because upstream keeps adding strings under its own
+name. After each merge from upstream:
+
+```bash
+python3 scripts/supersteward-rebrand.py   # name, app id, link scheme, data directory
+vp fmt
+python3 scripts/supersteward-i18n.py      # keep the translations of the renamed strings
+python3 scripts/supersteward-icons.py     # only if assets/supersteward/mark.svg changed
+python3 scripts/supersteward-rebrand.py --check
+```
+
+Not done yet: T3 Connect, the hosted app at app.t3.codes and the download links still point at
+upstream's services; the mobile app and the marketing site are untouched; the welcome page still
+offers to set up agents on the local machine.
 
 ## What is different
 
