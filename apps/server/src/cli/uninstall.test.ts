@@ -102,9 +102,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("t3 uninstall com
               supported: true,
               installed: true,
               current: true,
-              installedBaseDir: "/home/me/.t3",
+              installedBaseDir: "/home/me/.supersteward",
               unitPath: "/home/me/.config/systemd/user/t3code.service",
-              logPath: "/home/me/.t3/userdata/logs/boot-service.log",
+              logPath: "/home/me/.supersteward/userdata/logs/boot-service.log",
             }),
             withStopped: (operation) => operation,
             restart: Effect.die("unexpected restart"),
@@ -134,7 +134,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("t3 uninstall com
         ),
       );
       assert.deepStrictEqual(uninstalls, []);
-      assert.include(output, "--base-dir '/home/me/.t3'");
+      assert.include(output, "--base-dir '/home/me/.supersteward'");
     }),
   );
 });

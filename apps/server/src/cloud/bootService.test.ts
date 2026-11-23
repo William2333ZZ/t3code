@@ -67,8 +67,10 @@ it("reads the served T3 home and log back out of a rendered unit, plist, or task
   });
 
   expect(
-    BootService.bootServiceBaseDirOf(BootService.renderBootServiceUnit(plan("/home/theo/.t3"))),
-  ).toBe("/home/theo/.t3");
+    BootService.bootServiceBaseDirOf(
+      BootService.renderBootServiceUnit(plan("/home/theo/.supersteward")),
+    ),
+  ).toBe("/home/theo/.supersteward");
   expect(
     BootService.bootServiceBaseDirOf(
       BootService.renderBootServiceUnit(plan("/home/theo/T3 Data/100%")),
@@ -103,9 +105,9 @@ it("reads the served T3 home and log back out of a rendered unit, plist, or task
 
 it("protects the server unit from agents under CPU and memory pressure", () => {
   const unit = BootService.renderBootServiceUnit({
-    program: ["/home/theo/.t3/runtime/versions/1.2.3/t3", "__service-launcher"],
-    baseDir: "/home/theo/.t3",
-    logPath: "/home/theo/.t3/userdata/logs/boot-service.log",
+    program: ["/home/theo/.supersteward/runtime/versions/1.2.3/t3", "__service-launcher"],
+    baseDir: "/home/theo/.supersteward",
+    logPath: "/home/theo/.supersteward/userdata/logs/boot-service.log",
     unitPath: "/home/theo/.config/systemd/user/t3code.service",
   });
   const service = unit.slice(unit.indexOf("[Service]"), unit.indexOf("[Install]"));
@@ -198,7 +200,7 @@ const makeHarness = Effect.fn("test.make_boot_service_harness")(function* (
     "systemd",
     "user",
   );
-  const baseDir = path.join(home, ".t3");
+  const baseDir = path.join(home, ".supersteward");
   const statePath = path.join(baseDir, "runtime", "service-state.json");
   const runtime = pinnedRuntimePaths(path, baseDir, "1.2.3", platform);
   yield* fs.makeDirectory(path.dirname(runtime.entryPath), { recursive: true });
@@ -1286,7 +1288,7 @@ process.disconnect();
       const path = yield* Path.Path;
       const otherHome = yield* fs.makeTempDirectoryScoped({ prefix: "t3-other-home-" });
 
-      const other = yield* makeService(undefined, "1.2.3", path.join(otherHome, ".t3"));
+      const other = yield* makeService(undefined, "1.2.3", path.join(otherHome, ".supersteward"));
       commands.length = 0;
       expect(yield* other.restart).toBe("skipped");
       const refused = yield* other.install().pipe(Effect.flip);

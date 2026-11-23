@@ -1195,7 +1195,7 @@ it("requestSecret saves a pasted value to a file without opening a card", async 
     readonly requestKey: string;
     readonly value: string;
   }> = [];
-  const file = "/home/user/.t3/userdata/secrets/files/0123456789abcdef0123456789abcdef";
+  const file = "/home/user/.supersteward/userdata/secrets/files/0123456789abcdef0123456789abcdef";
 
   const layer = layerOrchestratorService.pipe(
     Layer.provide(
@@ -1451,8 +1451,8 @@ it("requestSecret delivers a fields card as one file per field", async () => {
     readonly secretStatus?: string;
   }> = [];
   const files = {
-    email: "/home/user/.t3/userdata/secrets/files/0123456789abcdef0123456789abcdef",
-    password: "/home/user/.t3/userdata/secrets/files/fedcba9876543210fedcba9876543210",
+    email: "/home/user/.supersteward/userdata/secrets/files/0123456789abcdef0123456789abcdef",
+    password: "/home/user/.supersteward/userdata/secrets/files/fedcba9876543210fedcba9876543210",
   };
   const projection = () => {
     const card = dispatched.find((command) => command.type === "secret_request.record");

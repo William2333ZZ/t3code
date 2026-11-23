@@ -177,10 +177,12 @@ describe("browse navigation", () => {
 });
 
 describe("browse entry filtering", () => {
-  const entries = ["my-t3code", "t3code", "cotton", "T3Code-old", ".t3", "docs"].map((name) => ({
-    name,
-    fullPath: `~/code/${name}`,
-  }));
+  const entries = ["my-t3code", "t3code", "cotton", "T3Code-old", ".supersteward", "docs"].map(
+    (name) => ({
+      name,
+      fullPath: `~/code/${name}`,
+    }),
+  );
   const names = (query: string) =>
     filterFilesystemBrowseEntries(entries, query).visibleEntries.map((entry) => entry.name);
 
@@ -207,8 +209,8 @@ describe("browse entry filtering", () => {
   });
 
   it("shows dot folders only when the query starts with a dot", () => {
-    expect(names("t3")).not.toContain(".t3");
-    expect(filterFilesystemBrowseEntries(entries, ".t3")).toEqual({
+    expect(names("t3")).not.toContain(".supersteward");
+    expect(filterFilesystemBrowseEntries(entries, ".supersteward")).toEqual({
       visibleEntries: [entries[4]],
       exactEntry: entries[4],
     });

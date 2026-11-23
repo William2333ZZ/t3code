@@ -19,7 +19,11 @@ SCOPE = ["apps/server", "apps/web", "apps/desktop", "packages", "docs/user",
 SKIP_DIRS = {"node_modules", "dist", "dist-electron", "dist-exe", ".electron-runtime", "translations", ".turbo"}
 # Test files whose data uses the upstream name as sample text; renaming it changes what they test.
 KEEP = {"packages/shared/src/paletteSearch.test.ts", "packages/shared/src/speech.test.ts",
-        "packages/shared/src/t3McpToolPresentation.test.ts"}
+        "packages/shared/src/t3McpToolPresentation.test.ts",
+        # the dev checkout's own `.t3`, which is not the installed app's data directory
+        "packages/shared/src/devHome.ts", "packages/shared/src/devHome.test.ts",
+        # upstream's issue-triage prompt must stay byte-identical to .github/triage/PLAYBOOK.md
+        "apps/server/src/triage/triagePrompt.ts", "apps/server/src/triage/triagePrompt.test.ts"}
 TEXT = {".ts", ".tsx", ".mjs", ".cjs", ".js", ".json", ".html", ".md", ".xml", ".plist", ".desktop", ".svg", ".css"}
 
 # (pattern, replacement), applied in order to every file in scope
@@ -43,7 +47,19 @@ RULES = [
     (r"com\.t3tools\.T3Code", "com.supersteward.App"),
 ]
 # (path prefix, pattern, replacement): only under that directory
+# The default data directory, wherever it is spelled out. Not the per-worktree `.t3` of a dev
+# checkout (packages/shared/src/devHome.ts) and not names that merely start with `.t3-`.
+HOME_DIR = r"(?<![\w.-])\.t3(?!\\\.)(?=[/\"'`)\\\s,;:]|$)"
 DIR_RULES = [
+    ("apps/server/src", HOME_DIR, ".supersteward"),
+    ("apps/desktop/src", HOME_DIR, ".supersteward"),
+    ("apps/web/src", HOME_DIR, ".supersteward"),
+    ("packages/ssh/src", HOME_DIR, ".supersteward"),
+    ("packages/shared/src", HOME_DIR, ".supersteward"),
+    ("packages/client-runtime/src", HOME_DIR, ".supersteward"),
+    ("docs/user", HOME_DIR, ".supersteward"),
+    # ...except where a test builds the dev checkout's own `.t3`
+    ("apps/server/src/storageCleanup.test.ts", r"\$\{checkout\}/\.supersteward", "${checkout}/.t3"),
     ("apps/desktop/src", r"/\.t3/", "/.supersteward/"),
     ("apps/desktop/src", r'"\.t3"', '".supersteward"'),
     ("apps/desktop/src", r"/\.t3`", "/.supersteward`"),

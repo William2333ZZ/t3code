@@ -22,7 +22,7 @@ const status = {
   installed: true,
   current: true,
   unitPath: "/home/me/.config/systemd/user/t3code.service",
-  logPath: "/home/me/.t3/userdata/logs/boot-service.log",
+  logPath: "/home/me/.supersteward/userdata/logs/boot-service.log",
 } as const;
 
 const newerServiceStatus = { ...status, current: false, installedVersion: "999.0.0" };
@@ -287,7 +287,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("service commands
       const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-service-cli-test-" });
       const { service, uninstalls } = makeTestService({
         ...status,
-        installedBaseDir: input.otherHome ? "/home/me/.t3" : baseDir,
+        installedBaseDir: input.otherHome ? "/home/me/.supersteward" : baseDir,
       });
       vi.spyOn(BootService, "layer").mockReturnValue(
         Layer.succeed(
@@ -317,7 +317,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("service commands
         ),
       );
       expect(uninstalls).toEqual(input.removed);
-      expect(output).toContain(input.otherHome ? "--base-dir '/home/me/.t3'" : "Removed");
+      expect(output).toContain(input.otherHome ? "--base-dir '/home/me/.supersteward'" : "Removed");
     }),
   );
 });

@@ -106,7 +106,7 @@ export class DesktopWslEnvironment extends Context.Service<
     readonly getUserHome: (distro: string | null) => Effect.Effect<Option.Option<string>>;
     // Use the distro IP to avoid unreliable wslhost localhost forwarding.
     readonly getDistroIp: (distro: string | null) => Effect.Effect<Option.Option<string>>;
-    // A null t3Home means the distro's login shell has no absolute T3CODE_HOME, so ~/.t3 applies.
+    // A null t3Home means the distro's login shell has no absolute T3CODE_HOME, so ~/.supersteward applies.
     readonly prepareRuntime: (
       distro: string | null,
       archive: WslRuntimeArchive,
