@@ -129,6 +129,13 @@ the source database first, so set `TMPDIR` to a disk with room, and pass `--seed
 base dir seeded once with `vp run migrate-dev-db --base-dir <dir>`. Fork cost grows with RSS, so
 spawning git from a large server stalls its loop where a fresh server shows nothing.
 
+`clients` attaches a client over the real WebSocket RPC, signed in with a CLI-issued session and
+holding what a web client holds: the shell, VCS status, and 0, 5 or 20 thread subscriptions, each
+measured as a quiet window. An attached client is what keeps the server's per-thread work alive,
+so a server without one under-reports it. It then drops 20 clients at once and reconnects them,
+and reports the time until every subscription delivered its snapshot and the loop delay across
+that storm, which is what a relay blip or a laptop waking up costs.
+
 Run it on macOS and Windows too, and on Linux with `--no-agent-scope`. Only Linux has agent
 scopes, so other platforms take per-process paths a Linux server with a systemd user manager never
 runs. A one-second `ps -A` poll per Claude session cost 0.1.11 about 18% of a core with 20 open
