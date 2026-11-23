@@ -491,6 +491,18 @@ export const AuthRevokePairingLinkInput = Schema.Struct({
 });
 export type AuthRevokePairingLinkInput = typeof AuthRevokePairingLinkInput.Type;
 
+/** The person to act as, or null to be oneself again. */
+export const AuthActAsInput = Schema.Struct({
+  person: Schema.NullOr(PersonName),
+});
+export type AuthActAsInput = typeof AuthActAsInput.Type;
+
+export const AuthActAsResult = Schema.Struct({
+  person: Schema.optionalKey(Schema.String),
+  self: Schema.optionalKey(Schema.String),
+});
+export type AuthActAsResult = typeof AuthActAsResult.Type;
+
 export const AuthRevokeClientSessionInput = Schema.Struct({
   sessionId: AuthSessionId,
 });
@@ -548,6 +560,8 @@ export const AuthSessionState = Schema.Struct({
   person: Schema.optionalKey(Schema.String),
   /** Everyone a device or link here is paired as, so a thread can be handed to one of them. */
   people: Schema.optionalKey(Schema.Array(Schema.String)),
+  /** This session's own person, while it acts as the one `person` names. */
+  self: Schema.optionalKey(Schema.String),
 });
 export type AuthSessionState = typeof AuthSessionState.Type;
 

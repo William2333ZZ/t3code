@@ -5,6 +5,7 @@ import type {
   AuthAccessStreamEvent,
   AuthAccessStreamSnapshotEvent,
   AuthCreatePairingCredentialInput,
+  AuthActAsInput,
   AuthRevokeClientSessionInput,
   AuthRevokePairingLinkInput,
 } from "@t3tools/contracts";
@@ -110,6 +111,17 @@ export function createAuthEnvironmentAtoms<R, E>(
           url: (urls) => urls.revokePairingLink(),
           timeoutMs: ACCESS_REQUEST_TIMEOUT_MS,
           request: ({ client, headers }) => client.revokePairingLink({ headers, payload: input }),
+        }),
+    }),
+    actAs: createEnvironmentCommand(runtime, {
+      label: "environment-data:server:auth-act-as",
+      execute: (input: AuthActAsInput) =>
+        executeConnectedEnvironmentHttpRequest({
+          group: "auth",
+          method: "POST",
+          url: (urls) => urls.actAs(),
+          timeoutMs: ACCESS_REQUEST_TIMEOUT_MS,
+          request: ({ client, headers }) => client.actAs({ headers, payload: input }),
         }),
     }),
     revokeClient: createEnvironmentCommand(runtime, {

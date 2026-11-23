@@ -13,10 +13,14 @@ import * as Stream from "effect/Stream";
 export const confinedPerson = (session: {
   readonly person?: string | undefined;
   readonly scopes: Iterable<string>;
-}): string | undefined =>
-  session.person === undefined || [...session.scopes].includes(AuthAccessWriteScope)
+  readonly acting?: true | undefined;
+}): string | undefined => {
+  // A manager who switched to someone sees what that person sees.
+  if (session.acting) return session.person;
+  return session.person === undefined || [...session.scopes].includes(AuthAccessWriteScope)
     ? undefined
     : session.person;
+};
 
 type ThreadRow = Pick<OrchestrationV2ThreadShell, "id" | "owner" | "lineage">;
 

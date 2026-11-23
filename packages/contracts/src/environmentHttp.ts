@@ -29,6 +29,8 @@ import {
   AuthMcpTokenRequest,
   AuthMcpTokenResult,
   AuthPairingCredentialResult,
+  AuthActAsInput,
+  AuthActAsResult,
   AuthRevokeClientSessionInput,
   AuthRevokePairingLinkInput,
   AuthApproveConnectDeviceInput,
@@ -115,6 +117,7 @@ const OptionalDpopProofHeaders = Schema.Struct({
 
 export const EnvironmentRequestInvalidReason = Schema.Literals([
   "invalid_scope",
+  "unknown_person",
   "scope_not_granted",
   "invalid_command",
   "invalid_history_cursor",
@@ -436,6 +439,9 @@ export interface EnvironmentSessionPrincipalShape {
   readonly proofKeyThumbprint?: string;
   readonly expiresAt?: DateTime.DateTime;
   readonly person?: string;
+  /** The session's own person while it acts as `person`. */
+  readonly self?: string;
+  readonly acting?: true;
 }
 
 export class EnvironmentAuthenticatedPrincipal extends Context.Service<
@@ -645,6 +651,14 @@ class EnvironmentAuthHttpApi extends HttpApiGroup.make("auth")
       payload: AuthRevokePairingLinkInput,
       success: AuthPairingLinkRevokeResult,
       error: EnvironmentScopedOperationErrors,
+    }).middleware(EnvironmentAuthenticatedAuth),
+  )
+  .add(
+    HttpApiEndpoint.post("actAs", "/api/auth/act-as", {
+      headers: OptionalBearerHeaders,
+      payload: AuthActAsInput,
+      success: AuthActAsResult,
+      error: [EnvironmentRequestInvalidError, ...EnvironmentScopedOperationErrors],
     }).middleware(EnvironmentAuthenticatedAuth),
   )
   .add(

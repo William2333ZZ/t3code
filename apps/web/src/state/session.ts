@@ -174,6 +174,45 @@ export function useManagesAnEnvironment(environmentIds: ReadonlyArray<Environmen
   return useAtomValue(environmentManagedAtom(environmentIdsKey(environmentIds)));
 }
 
+export interface EnvironmentIdentity {
+  readonly environmentId: EnvironmentId;
+  /** Who this client is on the environment right now. */
+  readonly person: string;
+  /** This client's own person, when `person` is someone it switched to. */
+  readonly self: string | undefined;
+  readonly people: ReadonlyArray<string>;
+  /** Only a manager may act as someone else, and switch back. */
+  readonly manager: boolean;
+}
+
+const environmentIdentitiesAtom = Atom.family((idsKey: string) => {
+  const ids = idsKey === "" ? [] : (idsKey.split("\n") as EnvironmentId[]);
+  const statesAtom = environmentSessionStatesAtom(idsKey);
+  return Atom.make((get): ReadonlyArray<EnvironmentIdentity> => {
+    const states = get(statesAtom);
+    return ids.flatMap((environmentId, index) => {
+      const session = AsyncResult.getOrElse(states[index]!, () => null);
+      if (session?.person === undefined) return [];
+      return [
+        {
+          environmentId,
+          person: session.person,
+          self: session.self,
+          people: session.people ?? [],
+          manager: sessionHasScope(states[index]!, AuthAccessWriteScope),
+        },
+      ];
+    });
+  }).pipe(Atom.withLabel(`web-environment-identities:${idsKey}`));
+});
+
+/** Who this client is on each environment that names its people, and who it could become. */
+export function useEnvironmentIdentities(
+  environmentIds: ReadonlyArray<EnvironmentId>,
+): ReadonlyArray<EnvironmentIdentity> {
+  return useAtomValue(environmentIdentitiesAtom(environmentIdsKey(environmentIds)));
+}
+
 /** Who this client is paired as, on each environment that names its people. */
 export function useEnvironmentPersons(
   environmentIds: ReadonlyArray<EnvironmentId>,

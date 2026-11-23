@@ -555,6 +555,25 @@ export const layer = HttpApiBuilder.group(
         ),
       )
       .handle(
+        "actAs",
+        Effect.fn("environment.auth.actAs")(function* (args) {
+          yield* annotateEnvironmentRequest(args.endpoint.name);
+          // Scopes are the session's own, so a manager acting as a member can still switch back.
+          const session = yield* requireEnvironmentScope(AuthAccessWriteScope);
+          if (!(yield* serverAuth.actAs(session.sessionId, args.payload.person))) {
+            return yield* failEnvironmentInvalidRequest("unknown_person");
+          }
+          const own = session.acting ? session.self : session.person;
+          const person = args.payload.person ?? own;
+          return {
+            ...(person === undefined ? {} : { person }),
+            ...(args.payload.person === null || args.payload.person === own || own === undefined
+              ? {}
+              : { self: own }),
+          };
+        }),
+      )
+      .handle(
         "revokeClient",
         Effect.fn("environment.auth.revokeClient")(
           function* (args) {

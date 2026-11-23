@@ -142,6 +142,14 @@ it("confines a person's ordinary session, but not one that may manage access or 
     confinedPerson({ person: "alice", scopes: new Set(["orchestration:read", "access:write"]) }),
   ).toBeUndefined();
   expect(confinedPerson({ scopes: ["orchestration:read"] })).toBeUndefined();
+  // A manager who switched to wang keeps their own permissions and still sees only wang's threads.
+  expect(
+    confinedPerson({
+      person: "wang",
+      acting: true,
+      scopes: ["orchestration:read", "access:write"],
+    }),
+  ).toBe("wang");
 });
 
 it.effect("asks for the thread list afresh, so rows a client held from before are replaced", () =>

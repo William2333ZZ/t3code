@@ -116,6 +116,9 @@ export interface AuthenticatedSession {
   readonly expiresAt?: DateTime.DateTime;
   /** Whose session this is, where several people share the environment. */
   readonly person?: string;
+  /** Set while a manager's session acts as `person`; `self` is then the manager's own person. */
+  readonly acting?: true;
+  readonly self?: string;
 }
 
 const serverAuthInternalErrorContext = {
@@ -617,6 +620,8 @@ export class EnvironmentAuth extends Context.Service<
     readonly revokeClient: (
       sessionId: AuthSessionId,
     ) => Effect.Effect<boolean, ServerAuthInternalError>;
+    /** Switch a session to act as `person`, or back to itself with null. False for an unknown person. */
+    readonly actAs: (sessionId: AuthSessionId, person: string | null) => Effect.Effect<boolean>;
     readonly revokeClientSession: (
       currentSessionId: AuthSessionId,
       targetSessionId: AuthSessionId,
@@ -818,10 +823,24 @@ export const make = Effect.gen(function* () {
   const people = yield* PersonBindings.PersonBindings;
   const secretStore = yield* ServerSecretStore.ServerSecretStore;
   const digest = yield* Digest.Digest;
+  // A manager who switched to someone is that person for everything the server decides by name:
+  // which threads the session sees and whose a thread it starts is.
   const withPerson = <S extends AuthenticatedSession>(session: S) =>
-    people
-      .get("session", session.sessionId)
-      .pipe(Effect.map((person): S => (person === undefined ? session : { ...session, person })));
+    Effect.zipWith(
+      people.get("session", session.sessionId),
+      people.get("acting", session.sessionId),
+      (own, acting): S => {
+        if (acting !== undefined && acting !== own) {
+          return {
+            ...session,
+            person: acting,
+            acting: true,
+            ...(own === undefined ? {} : { self: own }),
+          };
+        }
+        return own === undefined ? session : { ...session, person: own };
+      },
+    );
   const knownPeople = Effect.zipWith(
     people.list("session"),
     people.list("pairing-link"),
@@ -959,6 +978,7 @@ export const make = Effect.gen(function* () {
             sessionMethod: session.method,
             ...(session.expiresAt ? { expiresAt: DateTime.toUtc(session.expiresAt) } : {}),
             ...(session.person === undefined ? {} : { person: session.person }),
+            ...(session.self === undefined ? {} : { self: session.self }),
             ...(everyone.length === 0 ? {} : { people: everyone }),
           }) satisfies AuthSessionState,
       ),
@@ -1519,6 +1539,19 @@ export const make = Effect.gen(function* () {
     });
   });
 
+  const actAs: EnvironmentAuth["Service"]["actAs"] = Effect.fn("EnvironmentAuth.actAs")(
+    function* (sessionId, person) {
+      if (person === null) {
+        yield* people.unbind("acting", sessionId);
+        return true;
+      }
+      // Only someone already paired here: a typo must not create a person nobody is.
+      if (!(yield* knownPeople).includes(person)) return false;
+      yield* people.bind("acting", sessionId, person);
+      return true;
+    },
+  );
+
   const revokeClientSession: EnvironmentAuth["Service"]["revokeClientSession"] = Effect.fn(
     "EnvironmentAuth.revokeClientSession",
   )(function* (currentSessionId, targetSessionId) {
@@ -1794,6 +1827,7 @@ export const make = Effect.gen(function* () {
     revokeSession,
     listClientSessions,
     revokeClient,
+    actAs,
     revokeClientSession,
     revokeOtherClientSessions,
     authenticateHttpRequest,

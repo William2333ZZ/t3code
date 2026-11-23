@@ -3,7 +3,8 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as SqlClient from "effect/sql/SqlClient";
 
-export type PersonBindingKind = "pairing-link" | "session";
+// "acting" is the person a manager's session has switched to; "session" stays its own.
+export type PersonBindingKind = "pairing-link" | "session" | "acting";
 
 /**
  * Which person a pairing link or a session belongs to, on an environment several people share.
@@ -16,6 +17,7 @@ export class PersonBindings extends Context.Service<
   PersonBindings,
   {
     readonly bind: (kind: PersonBindingKind, id: string, person: string) => Effect.Effect<void>;
+    readonly unbind: (kind: PersonBindingKind, id: string) => Effect.Effect<void>;
     readonly get: (kind: PersonBindingKind, id: string) => Effect.Effect<string | undefined>;
     readonly list: (kind: PersonBindingKind) => Effect.Effect<ReadonlyMap<string, string>>;
   }
@@ -46,6 +48,15 @@ const make = Effect.gen(function* () {
     },
   );
 
+  const unbind: PersonBindings["Service"]["unbind"] = Effect.fn("PersonBindings.unbind")(
+    function* (kind, id) {
+      yield* sql`DELETE FROM person_bindings WHERE kind = ${kind} AND id = ${id}`.pipe(
+        Effect.orDie,
+      );
+      known.set(key(kind, id), undefined);
+    },
+  );
+
   const get: PersonBindings["Service"]["get"] = Effect.fn("PersonBindings.get")(
     function* (kind, id) {
       const cacheKey = key(kind, id);
@@ -68,7 +79,7 @@ const make = Effect.gen(function* () {
     },
   );
 
-  return PersonBindings.of({ bind, get, list });
+  return PersonBindings.of({ bind, unbind, get, list });
 });
 
 export const layer = Layer.effect(PersonBindings, make);

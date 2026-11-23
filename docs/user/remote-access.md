@@ -582,6 +582,11 @@ beside the search, which switches between their threads and everyone's. Members 
 button, because the server sends them nothing else. A device paired with no name, such as the
 machine itself, sees every thread.
 
+The bottom of the sidebar says who you are on the machines you are connected to. A manager can
+choose anyone paired with a machine there and work as them: the app reloads, shows that person's
+threads, and a thread started now is theirs. Choose yourself to switch back. Members see their
+name and have no one to switch to.
+
 Managing access is part of what `t3 pair` grants unless you say otherwise, so a link made with
 `--person` alone is a manager's. For someone who should see only their own threads, name the
 permissions and leave `access:write` out:
