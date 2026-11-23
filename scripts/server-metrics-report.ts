@@ -43,6 +43,20 @@ export const Measured = Schema.Struct({
   scaling: Schema.optional(Scaling),
   streaming: Schema.optional(Window),
   soak: Schema.optional(Soak),
+  /** A server on a copy of the developer's real database, its projects backed by clones. */
+  busy: Schema.optional(
+    Schema.Struct({
+      readyMs: Schema.Number,
+      projects: Schema.Number,
+      /** Off-heap MB the server held so its RSS is a long-lived server's; not compared. */
+      ballastMB: Schema.Number,
+      rest: Window,
+      shellMs: Spread,
+      shellKB: Schema.Number,
+      /** Back-to-back turns in a clone, each ending in a checkpoint. */
+      git: Window,
+    }),
+  ),
 });
 export type Measured = typeof Measured.Type;
 
@@ -206,7 +220,14 @@ export function compareMetrics(before: ServerMetrics, after: ServerMetrics, thre
   const improved: string[] = [];
   let compared = 0;
   for (const metric of new Set([...a.keys(), ...b.keys()])) {
-    if (metric === "soak.minutes" || metric.startsWith("scaling.points")) continue;
+    if (
+      metric === "soak.minutes" ||
+      metric === "busy.projects" ||
+      metric === "busy.ballastMB" ||
+      metric.startsWith("scaling.points")
+    ) {
+      continue;
+    }
     const x = a.get(metric);
     const y = b.get(metric);
     if (!x || !y) {

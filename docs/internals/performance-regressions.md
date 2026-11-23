@@ -119,6 +119,16 @@ reach the API. Only the server process is measured.
   cost: a stalled loop holds every client's RPC, however low the CPU average is. The delay
   histogram's own timer wakes the loop once per sample, so `wakeupsPerSec` leaves those out.
 
+An empty database hides the costs of a server people use. `--only busy` starts a server on a
+copy of the developer's real database, pruned by `migrate-dev-db` (read-only; it drops scheduled
+tasks, pending work, auth sessions and environment links), with every project pointed at a clone
+of the checkout so status and checkpoints run git on a real-size tree. It records startup, a rest
+window, the HTTP shell snapshot, and a window of back-to-back turns whose checkpoints run git
+while the event loop is measured. Results hold numbers only, never thread content. Seeding copies
+the source database first, so set `TMPDIR` to a disk with room, and pass `--seed-dir` to reuse a
+base dir seeded once with `vp run migrate-dev-db --base-dir <dir>`. Fork cost grows with RSS, so
+spawning git from a large server stalls its loop where a fresh server shows nothing.
+
 Run it on macOS and Windows too, and on Linux with `--no-agent-scope`. Only Linux has agent
 scopes, so other platforms take per-process paths a Linux server with a systemd user manager never
 runs. A one-second `ps -A` poll per Claude session cost 0.1.11 about 18% of a core with 20 open
