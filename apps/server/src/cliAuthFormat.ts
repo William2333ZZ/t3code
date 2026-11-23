@@ -159,6 +159,7 @@ export function formatSessionList(
     return `${JSON.stringify(
       sessions.map((session) => ({
         sessionId: session.sessionId,
+        ...(session.person === undefined ? {} : { person: session.person }),
         method: session.method,
         scopes: session.scopes,
         subject: session.subject,
@@ -182,6 +183,7 @@ export function formatSessionList(
       .map((session) =>
         [
           `${session.sessionId}${session.connected ? " connected" : ""}`,
+          ...(session.person === undefined ? [] : [`  person: ${session.person}`]),
           `  scopes: ${session.scopes.join(" ")}`,
           `  method: ${session.method}`,
           `  subject: ${session.subject}`,
