@@ -359,7 +359,8 @@ const SETTLED_TAIL_PAGE_COUNT = 25;
 const SETTLED_SHELF_EXPANDED_KEY = "t3code:sidebar:settled-expanded";
 const SNOOZED_SHELF_EXPANDED_KEY = "t3code:sidebar:snoozed-expanded";
 const WORKING_SHELF_EXPANDED_KEY = "t3code:sidebar:working-expanded";
-const SIDEBAR_MINE_ONLY_KEY = "t3code:sidebar:mine-only";
+// v2: earlier builds stored "everyone" as the default, which this key must not inherit.
+const SIDEBAR_MINE_ONLY_KEY = "t3code:sidebar:mine-only:v2";
 
 const inboxReturns = createInboxReturnTracker();
 
