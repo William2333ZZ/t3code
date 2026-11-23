@@ -136,6 +136,11 @@ so a server without one under-reports it. It then drops 20 clients at once and r
 and reports the time until every subscription delivered its snapshot and the loop delay across
 that storm, which is what a relay blip or a laptop waking up costs.
 
+`pipeline` runs 50 short turns back to back on one thread and splits each into the send reaching
+the API and the reply's end becoming a finished run (turn end plus checkpoint), so a slow
+checkpoint does not hide inside first-word time. The busy scenario also opens the seeded thread
+with the most messages through the bounded HTTP snapshot a client loads.
+
 Run it on macOS and Windows too, and on Linux with `--no-agent-scope`. Only Linux has agent
 scopes, so other platforms take per-process paths a Linux server with a systemd user manager never
 runs. A one-second `ps -A` poll per Claude session cost 0.1.11 about 18% of a core with 20 open
