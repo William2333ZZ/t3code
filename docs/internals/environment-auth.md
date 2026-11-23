@@ -127,8 +127,11 @@ holds a thread credential, and hiding one from tool listings is only discovery.
 
 Issuer and resource URLs come from the request's Host and
 `X-Forwarded-Proto`, so one server answers over loopback, Tailscale Serve and a
-T3 Connect tunnel. A proxy that rewrites Host or drops the protocol header
-breaks sign-in.
+T3 Connect tunnel. A proxy that rewrites Host must say which host the client
+addressed in `X-Forwarded-Host`; one that does neither, or drops the protocol
+header, breaks sign-in. The header is trusted from any peer, as the browser
+origin check already trusts it: a DPoP proof still has to be signed by the
+session's key and is single-use on this server.
 
 Bearer and DPoP clients obtain short-lived WebSocket tickets through authenticated
 HTTP so long-lived tokens stay out of socket URLs. A ticket names the route it
