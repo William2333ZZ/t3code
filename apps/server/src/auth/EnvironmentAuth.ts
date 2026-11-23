@@ -1416,9 +1416,15 @@ export const make = Effect.gen(function* () {
         Effect.withSpan("EnvironmentAuth.issueSession"),
       );
 
+  // Every listing names whose session it is, so `t3 auth session list` can answer "who has access".
   const listSessions: EnvironmentAuth["Service"]["listSessions"] = () =>
-    sessions.listActive().pipe(
-      Effect.map((activeSessions) => activeSessions.toSorted(bySessionPriority)),
+    Effect.zip(sessions.listActive(), people.list("session")).pipe(
+      Effect.map(([activeSessions, persons]) =>
+        activeSessions.toSorted(bySessionPriority).map((session) => {
+          const person = persons.get(session.sessionId);
+          return person === undefined ? session : { ...session, person };
+        }),
+      ),
       Effect.mapError((cause) => new ServerAuthSessionsListError({ cause })),
       Effect.withSpan("EnvironmentAuth.listSessions"),
     );
@@ -1487,17 +1493,13 @@ export const make = Effect.gen(function* () {
     };
 
   const listClientSessions: EnvironmentAuth["Service"]["listClientSessions"] = (currentSessionId) =>
-    Effect.zip(listSessions(), people.list("session")).pipe(
-      Effect.map(([clientSessions, persons]) =>
-        clientSessions.map((clientSession): AuthClientSession => {
-          const person = persons.get(clientSession.sessionId);
-          return {
-            ...clientSession,
-            ...authScopeResponse(clientSession.scopes),
-            current: clientSession.sessionId === currentSessionId,
-            ...(person === undefined ? {} : { person }),
-          };
-        }),
+    listSessions().pipe(
+      Effect.map((clientSessions) =>
+        clientSessions.map((clientSession): AuthClientSession => ({
+          ...clientSession,
+          ...authScopeResponse(clientSession.scopes),
+          current: clientSession.sessionId === currentSessionId,
+        })),
       ),
       Effect.withSpan("EnvironmentAuth.listClientSessions"),
     );
