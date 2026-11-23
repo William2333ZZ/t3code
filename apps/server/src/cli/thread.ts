@@ -35,6 +35,7 @@ import { expandHomePath } from "../os-jank.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import { readLiveServerRuntimeState } from "../serverRuntimeState.ts";
 import { projectLocationFlags, resolveCliAuthConfig } from "./config.ts";
+import { threadOwnerCommand } from "./threadOwner.ts";
 
 /**
  * Short enough that a run which stops to ask the user something is noticed
@@ -1106,5 +1107,6 @@ export const threadCommand = Command.make("thread").pipe(
     threadStartCommand,
     threadSendCommand,
     threadShowCommand,
+    threadOwnerCommand,
   ]),
 );

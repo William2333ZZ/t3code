@@ -580,6 +580,10 @@ owner yours, hand one of yours to anyone paired with the machine, or leave it wi
 cannot take or reassign someone else's thread; a device paired with no name, such as the machine
 itself, can reassign any of them.
 
+An agent can find out whose work it is doing: `t3 thread owner`, run from its shell, prints the
+thread's owner, or nothing when there is none. Mention it in the agent's instructions if its
+commits or pull requests should name that person.
+
 This says whose work a thread is; it does not hide anything. Everyone paired with the machine can
 still open every thread, answer its agent, and use its terminal. Share a machine only with people
 you would give your own access to.
