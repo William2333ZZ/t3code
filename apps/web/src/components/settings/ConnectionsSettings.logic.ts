@@ -454,6 +454,7 @@ export function resolveCurrentOriginPairingUrl(
   credential: string,
   currentHref: string = window.location.href,
 ): string | null {
+  // oxlint-disable-next-line t3code/no-root-path-on-url -- the page's own origin: an environment serves its web app from the root only
   const url = new URL("/pair", currentHref);
   // The packaged desktop window loads from supersteward://app, which no other device can open.
   if ((url.protocol !== "http:" && url.protocol !== "https:") || isLoopbackHostname(url.hostname)) {

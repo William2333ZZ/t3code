@@ -1,5 +1,6 @@
 import { useAuth, useClerk } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
+import { environmentEndpointUrl } from "@t3tools/client-runtime/environment";
 import { managedRelaySessionAtom } from "@t3tools/client-runtime/relay";
 import {
   type ConnectMcpApprovalCall,
@@ -182,7 +183,9 @@ export function ApproveAgentSurface() {
               size="sm"
               variant="link"
               render={
-                <a href={`${new URL("/connect-agent", environment.url).toString()}?${search}`} />
+                <a
+                  href={`${environmentEndpointUrl(environment.url, "/connect-agent")}?${search}`}
+                />
               }
             >
               <T>Use a sign-in code instead</T>

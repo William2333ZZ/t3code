@@ -501,6 +501,18 @@ export default defineConfig({
         rules: { "t3code/no-ambiguous-detail-navigation": "error" },
       },
       {
+        // A gateway serves several environments on one origin by a leading /e/<name>; a root path drops it.
+        files: [
+          "apps/web/src/**",
+          "apps/mobile/src/**",
+          "apps/desktop/src/**",
+          "packages/client-runtime/src/**",
+          "packages/shared/src/**",
+        ],
+        excludeFiles: ["**/*.{test,spec,bench}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}"],
+        rules: { "t3code/no-root-path-on-url": "error" },
+      },
+      {
         // Raw ResizeObserver state commits miss the paint; observeResize flushes derived layout together.
         files: ["apps/web/src/**"],
         excludeFiles: [

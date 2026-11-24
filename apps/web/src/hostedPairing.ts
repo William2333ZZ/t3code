@@ -73,6 +73,7 @@ export function buildHostedPairingUrl(input: {
   readonly token: string;
   readonly label?: string | null;
 }): string {
+  // oxlint-disable-next-line t3code/no-root-path-on-url -- the hosted app's own address, not an environment's
   const url = new URL("/pair", configuredHostedAppUrl());
   url.searchParams.set("host", input.host);
 
@@ -87,6 +88,7 @@ export function buildHostedPairingUrl(input: {
 export function buildHostedChannelSelectionUrl(input: {
   readonly channel: HostedAppChannel;
 }): string {
+  // oxlint-disable-next-line t3code/no-root-path-on-url -- the hosted app's own address, not an environment's
   const url = new URL("/__t3code/channel", configuredHostedAppUrl());
   url.searchParams.set("channel", input.channel);
   return url.toString();
