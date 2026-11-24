@@ -12,6 +12,7 @@ import {
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { QrCode } from "@t3tools/shared/qrCode";
 import { buildPairingAppLink } from "@t3tools/shared/remote";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import { HttpServer } from "effect/http";
@@ -212,7 +213,7 @@ const resolveListeningPort = (address: unknown, fallbackPort: number): number =>
 
 export const buildPairingUrl = (connectionString: string, token: string): string => {
   const url = new URL(connectionString);
-  url.pathname = "/pair";
+  url.pathname = `${gatewayPrefixOf(url)}/pair`;
   url.searchParams.delete("token");
   url.hash = new URLSearchParams([["token", token]]).toString();
   return url.toString();

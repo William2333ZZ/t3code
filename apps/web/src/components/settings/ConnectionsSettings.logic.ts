@@ -4,6 +4,7 @@ import { msg } from "gt-react";
 
 import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
 import { getPairingTokenFromUrl, setPairingTokenOnUrl } from "@t3tools/shared/remote";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import { readHostedPairingRequest } from "../../hostedPairing";
 import { m, type MessageResolver } from "../../i18n/messages";
 import {
@@ -269,7 +270,7 @@ export function parsePairingUrlFields(
     const pairingCode = getPairingTokenFromUrl(url);
     if (!pairingCode) return null;
     return {
-      host: url.origin,
+      host: `${url.origin}${gatewayPrefixOf(url)}`,
       pairingCode,
     };
   } catch {

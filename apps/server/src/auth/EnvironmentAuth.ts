@@ -27,6 +27,7 @@ import {
 } from "@t3tools/contracts";
 import { isLocalLoopbackHost } from "@t3tools/shared/hostClassification";
 import { encodeOAuthScope } from "@t3tools/shared/oauthScope";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as Context from "effect/Context";
 import * as Digest from "effect/crypto/Digest";
 import * as DateTime from "effect/DateTime";
@@ -1586,7 +1587,7 @@ export const make = Effect.gen(function* () {
     issueStartupPairingCredential().pipe(
       Effect.map((issued) => {
         const url = new URL(baseUrl);
-        url.pathname = "/pair";
+        url.pathname = `${gatewayPrefixOf(url)}/pair`;
         url.searchParams.delete("token");
         url.hash = new URLSearchParams([["token", issued.credential]]).toString();
         return url.toString();

@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 
-import { parseUrl } from "./url.ts";
+import { gatewayPrefixOf, parseUrl } from "./url.ts";
 
 const PAIRING_TOKEN_PARAM = "token";
 const HOSTED_PAIRING_HOST_PARAM = "host";
@@ -101,7 +101,7 @@ const normalizeRemoteBaseUrl = (
       protocol: url.protocol,
     });
   }
-  url.pathname = "/";
+  url.pathname = `${gatewayPrefixOf(url)}/`;
   url.search = "";
   url.hash = "";
   return url;
@@ -114,7 +114,7 @@ const toHttpBaseUrl = (url: URL): string => {
   } else if (next.protocol === "wss:") {
     next.protocol = "https:";
   }
-  next.pathname = "/";
+  next.pathname = `${gatewayPrefixOf(next)}/`;
   next.search = "";
   next.hash = "";
   return next.toString();
@@ -127,7 +127,7 @@ const toWsBaseUrl = (url: URL): string => {
   } else if (next.protocol === "https:") {
     next.protocol = "wss:";
   }
-  next.pathname = "/";
+  next.pathname = `${gatewayPrefixOf(next)}/`;
   next.search = "";
   next.hash = "";
   return next.toString();

@@ -5,6 +5,7 @@ import type {
   AuthConnectDeviceRequest,
   AuthPairingLink,
 } from "@t3tools/contracts";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as DateTime from "effect/DateTime";
 
 import type { IssuedBearerSession, IssuedPairingLink } from "./auth/EnvironmentAuth.ts";
@@ -40,7 +41,8 @@ export function formatIssuedPairingCredential(
   const pairUrl =
     options?.baseUrl != null && options.baseUrl.length > 0
       ? (() => {
-          const url = new URL("/pair", options.baseUrl);
+          const base = new URL(options.baseUrl);
+          const url = new URL(`${gatewayPrefixOf(base)}/pair`, base);
           url.searchParams.delete("token");
           url.hash = new URLSearchParams([["token", credential.credential]]).toString();
           return url.toString();

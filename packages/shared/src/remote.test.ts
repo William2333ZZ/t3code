@@ -22,6 +22,18 @@ describe("remote", () => {
     });
   });
 
+  it("keeps the gateway prefix of a pairing url", () => {
+    expect(
+      resolveRemotePairingTarget({
+        pairingUrl: "http://gw.test:41010/e/polaris/pair#token=pairing-token",
+      }),
+    ).toEqual({
+      credential: "pairing-token",
+      httpBaseUrl: "http://gw.test:41010/e/polaris/",
+      wsBaseUrl: "ws://gw.test:41010/e/polaris/",
+    });
+  });
+
   it("accepts pairing urls that still use a query token", () => {
     expect(
       resolveRemotePairingTarget({

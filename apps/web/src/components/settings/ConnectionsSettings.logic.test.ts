@@ -1,6 +1,7 @@
 import { type DesktopWslState, EnvironmentId } from "@t3tools/contracts";
 import { describe, expect, it, vi } from "vite-plus/test";
 import {
+  parsePairingUrlFields,
   applyWslEnableSelection,
   isServerNetworkAccessible,
   parseManualDesktopSshTarget,
@@ -10,6 +11,20 @@ import {
   selectQrEndpointOption,
   togglePairingScopeSelection,
 } from "./ConnectionsSettings.logic";
+
+describe("parsePairingUrlFields", () => {
+  it("keeps a gateway prefix in the host and drops any other path", () => {
+    vi.stubGlobal("window", { location: { origin: "http://localhost" } });
+    expect(parsePairingUrlFields("https://gw.test:41010/e/polaris/pair#token=code")).toEqual({
+      host: "https://gw.test:41010/e/polaris",
+      pairingCode: "code",
+    });
+    expect(parsePairingUrlFields("https://remote.test/pair#token=code")?.host).toBe(
+      "https://remote.test",
+    );
+    vi.unstubAllGlobals();
+  });
+});
 
 describe("togglePairingScopeSelection", () => {
   it.each([
