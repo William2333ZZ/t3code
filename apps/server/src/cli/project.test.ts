@@ -28,6 +28,7 @@ import * as Stream from "effect/Stream";
 import { Command } from "effect/cli";
 import { FetchHttpClient } from "effect/http";
 import * as TestClock from "effect/testing/TestClock";
+import * as TestConsole from "effect/testing/TestConsole";
 
 import * as ServerSecretStore from "../auth/ServerSecretStore.ts";
 import { cli } from "../binCli.ts";
@@ -135,6 +136,16 @@ it.effect(
       yield* runCli(["project", "rename", workspaceRoot, "Beta", "--base-dir", baseDir]);
       assert.equal((yield* readProjects(baseDir)).projects[0]?.title, "Beta");
 
+      yield* runCli(["project", "list", "--json", "--base-dir", baseDir]);
+      const listed = JSON.parse(String((yield* TestConsole.logLines).at(-1))) as Array<{
+        readonly title: string;
+        readonly workspaceRoot: string;
+      }>;
+      assert.deepEqual(
+        listed.map((project) => [project.title, project.workspaceRoot]),
+        [["Beta", workspaceRoot]],
+      );
+
       yield* runCli(["project", "remove", added?.id ?? "", "--base-dir", baseDir]);
       assert.deepEqual((yield* readProjects(baseDir)).projects, []);
 
@@ -159,7 +170,9 @@ it.effect(
         { path: shared, name: NodePath.basename(shared) },
         { path: homeShared, name: NodePath.basename(homeShared) },
       ]);
-    }).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
+    }).pipe(
+      Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, TestConsole.layer)),
+    ),
 );
 
 it.effect.each(["snapshot", "mutation"] as const)(

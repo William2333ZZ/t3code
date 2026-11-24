@@ -559,7 +559,41 @@ const projectRenameCommand = Command.make("rename", {
   ),
 );
 
+const projectListCommand = Command.make("list", {
+  ...projectLocationFlags,
+  json: Flag.Boolean("json").pipe(
+    Flag.withDescription("Print the projects as JSON."),
+    Flag.withDefault(false),
+  ),
+}).pipe(
+  Command.withDescription("List projects."),
+  Command.withHandler((flags) =>
+    // Reads only; it shares the runner so it asks a running server and falls back to the files.
+    runProjectMutation(flags, ({ snapshot }) => {
+      const projects = snapshot.projects
+        .filter((project) => project.deletedAt === null && !project.archivedAt)
+        .map((project) => ({
+          id: project.id,
+          title: project.title,
+          workspaceRoot: project.workspaceRoot,
+          trackedFolders: (project.trackedFolders ?? []).map((folder) => folder.path),
+        }));
+      if (flags.json) return Effect.succeed(JSON.stringify(projects));
+      return Effect.succeed(
+        projects.length === 0
+          ? "No projects."
+          : projects.map((project) => `${project.title}\t${project.workspaceRoot}`).join("\n"),
+      );
+    }),
+  ),
+);
+
 export const projectCommand = Command.make("project").pipe(
   Command.withDescription("Manage projects."),
-  Command.withSubcommands([projectAddCommand, projectRemoveCommand, projectRenameCommand]),
+  Command.withSubcommands([
+    projectAddCommand,
+    projectListCommand,
+    projectRemoveCommand,
+    projectRenameCommand,
+  ]),
 );
