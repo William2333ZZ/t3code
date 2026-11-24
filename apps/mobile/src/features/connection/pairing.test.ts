@@ -33,6 +33,13 @@ describe("extractPairingUrlFromQrPayload", () => {
 });
 
 describe("parsePairingUrl", () => {
+  it("keeps a gateway prefix in the host", () => {
+    expect(parsePairingUrl("https://gw.test:41010/e/polaris/pair#token=code")).toEqual({
+      host: "https://gw.test:41010/e/polaris",
+      code: "code",
+    });
+  });
+
   it("reads hosted pairing links into backend host fields", () => {
     expect(
       parsePairingUrl(
