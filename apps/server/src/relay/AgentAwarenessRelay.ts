@@ -27,6 +27,7 @@ import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
+import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
@@ -449,7 +450,24 @@ export const make = Effect.gen(function* () {
         ),
       );
 
+  // A self-hosted receiver, set by whoever provisions the machine. It takes the same request a
+  // linked relay does and needs no cloud account; when set it replaces the linked relay.
+  const directReceiver = yield* Config.all({
+    url: Config.String("T3CODE_AWARENESS_URL").pipe(Config.option),
+    token: Config.String("T3CODE_AWARENESS_TOKEN").pipe(Config.option),
+  }).pipe(
+    Effect.map(({ url, token }) =>
+      Option.map(url, (value) => ({
+        url: value,
+        issuer: value,
+        environmentCredential: Option.getOrElse(token, () => "none"),
+      })),
+    ),
+    Effect.orElseSucceed(() => Option.none()),
+  );
+
   const readRelayConfig = Effect.gen(function* () {
+    if (Option.isSome(directReceiver)) return directReceiver.value;
     const [url, issuer, environmentCredential] = yield* Effect.all([
       readSecretString(RELAY_URL_SECRET),
       readSecretString(RELAY_ISSUER_SECRET),
@@ -460,9 +478,11 @@ export const make = Effect.gen(function* () {
       : null;
   });
 
-  const readPublishAgentActivityEnabled = readSecretString(PUBLISH_AGENT_ACTIVITY_SECRET).pipe(
-    Effect.map(isAgentActivityPublishingEnabledValue),
-  );
+  const readPublishAgentActivityEnabled = Option.isSome(directReceiver)
+    ? Effect.succeed(true)
+    : readSecretString(PUBLISH_AGENT_ACTIVITY_SECRET).pipe(
+        Effect.map(isAgentActivityPublishingEnabledValue),
+      );
 
   const makeRelayClient = (relayConfig: {
     readonly url: string;
