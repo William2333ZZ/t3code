@@ -5,6 +5,7 @@ import type {
   ExecutionEnvironmentDescriptor,
 } from "@t3tools/contracts";
 import { withRelayClientTracing } from "@t3tools/shared/relayTracing";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -83,8 +84,9 @@ function primarySocketUrl(
   owners: ClientOwnerParams,
 ): string {
   const url = new URL(target.wsBaseUrl);
-  if (url.pathname === "" || url.pathname === "/") {
-    url.pathname = "/ws";
+  const prefix = gatewayPrefixOf(url);
+  if (url.pathname === prefix || url.pathname === `${prefix}/`) {
+    url.pathname = `${prefix}/ws`;
   }
   appendClientConnectionParams(url, clientMetadata, "direct", owners);
   return url.toString();

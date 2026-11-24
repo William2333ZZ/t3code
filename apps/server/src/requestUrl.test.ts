@@ -31,4 +31,17 @@ describe("requestUrl", () => {
       }),
     ).toBe("https://app.example.com/oauth/token");
   });
+
+  it("puts back the gateway prefix a proxy stripped, and ignores anything that is not one", () => {
+    expect(
+      urlOf({
+        host: "10.200.0.21:3773",
+        "x-forwarded-host": "gateway.test:41010",
+        "x-forwarded-prefix": "/e/polaris",
+      }),
+    ).toBe("http://gateway.test:41010/e/polaris/oauth/token");
+    expect(urlOf({ host: "10.200.0.21:3773", "x-forwarded-prefix": "/admin" })).toBe(
+      "http://10.200.0.21:3773/oauth/token",
+    );
+  });
 });

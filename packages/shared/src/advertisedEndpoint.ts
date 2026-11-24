@@ -7,6 +7,8 @@ import type {
   AdvertisedEndpointStatus,
 } from "@t3tools/contracts";
 
+import { gatewayPrefixOf } from "./url.ts";
+
 export interface CreateAdvertisedEndpointInput {
   readonly id: string;
   readonly label: string;
@@ -32,7 +34,7 @@ export function normalizeHttpBaseUrl(rawValue: string): string {
     throw new Error(`Endpoint must use HTTP or HTTPS. Received ${url.protocol}`);
   }
 
-  url.pathname = "/";
+  url.pathname = `${gatewayPrefixOf(url)}/`;
   url.search = "";
   url.hash = "";
   return url.toString();

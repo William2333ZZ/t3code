@@ -10,6 +10,7 @@ import {
 } from "@t3tools/contracts";
 import { encodeOAuthScope } from "@t3tools/shared/oauthScope";
 import { hashTelemetryId } from "@t3tools/shared/telemetryId";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
@@ -270,8 +271,9 @@ export const issueRemoteDpopWebSocketTicket = Effect.fn(
 
 function rpcSocketUrl(wsBaseUrl: string): URL {
   const url = new URL(wsBaseUrl);
-  if (url.pathname === "" || url.pathname === "/") {
-    url.pathname = "/ws";
+  const prefix = gatewayPrefixOf(url);
+  if (url.pathname === prefix || url.pathname === `${prefix}/`) {
+    url.pathname = `${prefix}/ws`;
   }
   return url;
 }

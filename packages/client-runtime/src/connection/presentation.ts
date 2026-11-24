@@ -1,4 +1,5 @@
 import type { ServerConfig } from "@t3tools/contracts";
+import { gatewayPrefixOf } from "@t3tools/shared/url";
 import * as Option from "effect/Option";
 import { mFallback, msg } from "gt-i18n";
 import type { MFunctionType } from "gt-i18n/types";
@@ -179,7 +180,7 @@ function mcpUrlFromBase(httpBaseUrl: string): string | null {
   } catch {
     return null;
   }
-  url.pathname = "/mcp";
+  url.pathname = `${gatewayPrefixOf(url)}/mcp`;
   url.search = "";
   url.hash = "";
   return url.toString();
