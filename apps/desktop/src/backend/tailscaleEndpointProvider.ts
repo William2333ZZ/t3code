@@ -78,6 +78,7 @@ function resolveTailscaleIpAdvertisedEndpoints(input: {
 
 // The backend may run elsewhere (WSL), so ask it for its id instead of reading the state dir.
 const probeServesThisBackend = (localHttpUrl: string) => (baseUrl: string) =>
+  // oxlint-disable-next-line t3code/no-root-path-on-url -- the desktop's own local server, reached directly
   HttpClient.get(new URL("/.well-known/t3/environment", localHttpUrl)).pipe(
     Effect.flatMap(HttpClientResponse.filterStatusOk),
     Effect.flatMap(HttpClientResponse.schemaBodyJson(ExecutionEnvironmentDescriptor)),

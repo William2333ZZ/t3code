@@ -196,6 +196,7 @@ export function buildNewThreadLink(input: {
   readonly model?: string | null;
   readonly origin?: string;
 }): string {
+  // oxlint-disable-next-line t3code/no-root-path-on-url -- the hosted app's own address, not an environment's
   const url = new URL("/new", input.origin ?? DEFAULT_HOSTED_APP_URL);
   url.searchParams.set("prompt", input.prompt);
   if (input.repository) {

@@ -5,6 +5,7 @@ function faviconUrlForPage(rawUrl: string | null | undefined, _size = 32): strin
   try {
     const pageUrl = new URL(rawUrl);
     if (pageUrl.protocol !== "http:" && pageUrl.protocol !== "https:") return null;
+    // oxlint-disable-next-line t3code/no-root-path-on-url -- a website's favicon, not an environment
     return new URL("/favicon.ico", pageUrl.origin).href;
   } catch {
     return null;

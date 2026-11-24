@@ -7,6 +7,7 @@ export function resolveClerkSignInProps(href: string, isElectron: boolean): Cler
   if (isElectron) {
     // Electron routes through the hash, so reset any Clerk virtual pathname without losing the T3 page.
     const redirectUrl = new URL(href);
+    // oxlint-disable-next-line t3code/no-root-path-on-url -- the app's own sign-in redirect, not an environment
     redirectUrl.pathname = "/";
     redirectUrl.search = "";
 
