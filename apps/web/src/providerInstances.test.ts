@@ -626,7 +626,7 @@ describe("provider icon metadata", () => {
           [instanceId]: {
             driver,
             enabled: false,
-            config: { ...registryConfig, source: "local", commandPath: "dsh" },
+            config: { ...registryConfig, source: "local", commandPath: "my-agent" },
           },
         },
         projectSettingsOverrides: {},
@@ -636,6 +636,27 @@ describe("provider icon metadata", () => {
     expect(localEntry?.acpRegistryAgentId).toBeUndefined();
     expect(localEntry?.acpRegistryIconUrl).toBeUndefined();
     expect(localEntry?.enabled).toBe(false);
+    // A local command whose executable is a bundled agent keeps that agent's own logo.
+    const [dshEntry] = applyProviderInstanceSettings(
+      brandedEntries,
+      {
+        providerInstances: {
+          [instanceId]: {
+            driver,
+            enabled: true,
+            config: {
+              ...registryConfig,
+              source: "local",
+              commandPath: "/home/agent/.local/bin/dsh",
+            },
+          },
+        },
+        projectSettingsOverrides: {},
+      },
+      null,
+    );
+    expect(dshEntry?.acpRegistryAgentId).toBe("dsh");
+    expect(dshEntry?.acpRegistryIconUrl).toBeUndefined();
     expect(localEntry?.snapshot).toBe(snapshots[0]?.snapshot);
 
     const [restoredEntry] = applyProviderInstanceSettings(

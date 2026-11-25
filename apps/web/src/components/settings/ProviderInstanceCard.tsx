@@ -64,6 +64,7 @@ import {
   seedRowsDraft,
 } from "./ProviderSettingsForm";
 import { ProviderModelsSection } from "./ProviderModelsSection";
+import { bundledAgentIdForCommand } from "@t3tools/client-runtime/state/provider-instance-display";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
@@ -990,7 +991,7 @@ export function ProviderInstanceCard({
       accentColor={accentColor}
       acpRegistryAgentId={
         readConfigString(instance.config, "source") === "local"
-          ? undefined
+          ? bundledAgentIdForCommand(readConfigString(instance.config, "commandPath"))
           : (readConfigString(instance.config, "agentId") ?? undefined)
       }
       acpRegistryIconUrl={

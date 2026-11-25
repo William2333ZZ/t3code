@@ -13,6 +13,7 @@ import {
   type ServerProviderState,
 } from "@t3tools/contracts";
 import {
+  bundledAgentIdForCommand,
   normalizeProviderAccentColor,
   resolveProviderInstanceDisplayName,
   shouldShowInstanceBadge,
@@ -171,7 +172,11 @@ function applyProviderInstanceBranding(
       ? (explicitInstance.config as Readonly<Record<string, unknown>>)
       : null;
   if (config?.source === "local") {
-    return { ...entry, acpRegistryAgentId: undefined, acpRegistryIconUrl: undefined };
+    return {
+      ...entry,
+      acpRegistryAgentId: bundledAgentIdForCommand(config.commandPath),
+      acpRegistryIconUrl: undefined,
+    };
   }
   const agentId = config?.agentId;
   const iconUrl = config?.registryIconUrl;
