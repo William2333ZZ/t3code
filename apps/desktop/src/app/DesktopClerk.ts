@@ -23,6 +23,11 @@ import * as DesktopUserData from "./DesktopUserData.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
 import { openClerkTokenStorage } from "./ClerkTokenStore.ts";
 import * as DesktopWebLinks from "./DesktopWebLinks.ts";
+import {
+  linkedAuthoritiesPath,
+  readLinkedAuthority,
+  rememberLinkedAuthority,
+} from "../window/LinkedAuthorities.ts";
 
 declare const __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__: string | undefined;
 
@@ -218,6 +223,10 @@ export const make = Effect.gen(function* () {
       const openAppLink = (value: string | undefined) => {
         if (!value || (promptLinkAppPath(value) === null && readPairingAppLink(value) === null))
           return false;
+        // Before the renderer hears of the link, so its first request to that host is already trusted.
+        const authority = readLinkedAuthority(value);
+        if (authority !== null)
+          rememberLinkedAuthority(linkedAuthoritiesPath(environment.stateDir), authority);
         void runPromise(webLinks.receive(value));
         return true;
       };

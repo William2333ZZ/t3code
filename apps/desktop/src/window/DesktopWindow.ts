@@ -46,6 +46,7 @@ import * as DesktopRendererHistory from "../telemetry/DesktopRendererHistory.ts"
 import { makeQuitShortcutHandler } from "./QuitHold.ts";
 import { copyContextMenuImage } from "./ContextMenuImage.ts";
 import { installMainWindowRemoteRequestHeaderPolicy } from "./RemoteRequestHeaders.ts";
+import { acceptLinkedAuthorities, linkedAuthoritiesPath } from "./LinkedAuthorities.ts";
 
 const TITLEBAR_HEIGHT = 40;
 
@@ -411,6 +412,16 @@ export const make = Effect.gen(function* () {
   );
   let flushMainWindowBounds: Effect.Effect<void> = Effect.void;
   let remoteRequestHeaderOwner: Electron.BrowserWindow | null = null;
+  yield* electronApp.on(
+    "certificate-error",
+    acceptLinkedAuthorities(
+      linkedAuthoritiesPath(environment.stateDir),
+      (contents) =>
+        remoteRequestHeaderOwner !== null &&
+        !remoteRequestHeaderOwner.isDestroyed() &&
+        contents.session === remoteRequestHeaderOwner.webContents.session,
+    ),
+  );
 
   const dismissConnectingSplash = Effect.gen(function* () {
     const splash = yield* Ref.getAndSet(splashWindowRef, Option.none());
