@@ -50,6 +50,8 @@ import {
 import { useUiStateStore } from "../uiStateStore";
 import { configureClientTracing } from "../observability/clientTracing";
 import { resolveInitialServerAuthGateState } from "../environments/primary";
+import { isCustomerPath } from "../customer/customerMode";
+import { enforceUiMode } from "../customer/customerRedirect";
 import { GUEST_PAGE_PATH } from "../guestPage";
 import { hasHostedPairingRequest, isHostedStaticApp } from "../hostedPairing";
 import { useHostedPromptLinkLanding } from "../components/promptLinks/HostedPromptLinkLanding";
@@ -95,8 +97,12 @@ export const Route = createRootRoute({
       // Idempotent, so every navigation can ask for it.
       void configureClientTracing();
     }
+    // Members get the customer UI (src/customer); this redirects whichever UI is on the other's routes.
+    const customerUi =
+      authGateState.status === "authenticated" && enforceUiMode(authGateState.identity, location);
     if (
       authGateState.status === "authenticated" &&
+      !customerUi &&
       getDesktopSnapShotBridge() &&
       shouldResumeSnapShotSetupOnStartup() &&
       location.pathname !== "/settings/snap-shot"
@@ -171,6 +177,9 @@ function RootRouteBranch() {
   ) {
     return <Outlet />;
   }
+
+  // The customer UI brings its own frame; none of the developer shell mounts around it.
+  if (isCustomerPath(pathname)) return <Outlet />;
 
   // Handle links before onboarding redirects lose them.
   if (hostedPromptLinkLanding !== null) {

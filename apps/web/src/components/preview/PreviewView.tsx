@@ -28,7 +28,7 @@ import {
   resolveSearchUrlTemplate,
 } from "@t3tools/shared/preview";
 import { msg, T, useGT, useMessages } from "gt-react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useEffectEvent, useRef, useState } from "react";
 
 import {
   BROWSER_HISTORY_MAX_ENTRIES_PER_PROJECT,
@@ -119,6 +119,8 @@ interface Props {
   tabId?: string | null;
   configuredUrls?: ReadonlyArray<string> | undefined;
   visible: boolean;
+  /** Leaves out the address bar and its controls, for a host that shows the page alone. */
+  hideChrome?: boolean;
   onSendAnnotation?: (
     annotation: PreviewAnnotationPayload,
     image: ComposerImageAttachment | null,
@@ -161,6 +163,10 @@ function ServerTabFileNotShown(props: {
   );
 }
 
+function NoChromeRow(_props: ComponentProps<typeof PreviewChromeRow>) {
+  return null;
+}
+
 function focusPreviewWebview(runtimeTabId: string) {
   document
     .querySelector<HTMLElement>(`[data-preview-viewport="${CSS.escape(runtimeTabId)}"] webview`)
@@ -178,8 +184,11 @@ export function PreviewView({
   tabId: requestedTabId,
   configuredUrls,
   visible,
+  hideChrome = false,
   onSendAnnotation,
 }: Props) {
+  // Swapped rather than wrapped, so the row's props below stay as upstream has them.
+  const ChromeRow = hideChrome ? NoChromeRow : PreviewChromeRow;
   const gt = useGT();
   const messages = useMessages();
   const urlInputRef = useRef<HTMLInputElement | null>(null);
@@ -1005,7 +1014,7 @@ export function PreviewView({
           keybindings={keybindings}
         />
       ) : null}
-      <PreviewChromeRow
+      <ChromeRow
         url={url}
         loading={loading || serverStreamPending}
         canGoBack={canGoBack && !serverInputDisabled}

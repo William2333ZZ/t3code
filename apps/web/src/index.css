@@ -2683,3 +2683,44 @@ code {
 .messages-timeline-scroll:focus-visible {
   outline: none;
 }
+
+/* The customer UI (src/customer) is light whatever theme the app is in. Its tokens sit on the
+   wrapper, so they win over the root's, including the inline ones a custom theme writes there. */
+[data-customer-ui] {
+  color-scheme: light;
+  --radius: 0.875rem;
+  --font-sans:
+    "Inter Variable", Inter, "PingFang SC", "Microsoft YaHei", -apple-system, system-ui, sans-serif;
+  --background: #f4f5f7;
+  --foreground: #16181d;
+  --card: #fff;
+  --card-foreground: #16181d;
+  --popover: #fff;
+  --popover-foreground: #16181d;
+  --primary: #16181d;
+  --primary-foreground: #fff;
+  --secondary: #eef0f3;
+  --secondary-foreground: #16181d;
+  --muted: #eef0f3;
+  --muted-foreground: #6b7280;
+  --placeholder: #9aa1ad;
+  --accent: #eef0f3;
+  --accent-foreground: #16181d;
+  --border: #e3e5ea;
+  --input: #e3e5ea;
+  --ring: #4f6bff;
+  --info: #4f6bff;
+  --info-foreground: #3346c2;
+  --success: #22a06b;
+  --success-foreground: #17794f;
+  --warning: #f0a020;
+  --warning-foreground: #a66a00;
+  --error: #e5484d;
+  --error-foreground: #b4232a;
+  --customer-canvas: #f8f9fb;
+  --customer-mark: #8ea2ff;
+  --customer-note: 0.8125rem;
+  --customer-shadow-line: 0 1px 2px rgb(16 24 40 / 6%);
+  --customer-shadow-card: var(--customer-shadow-line), 0 8px 24px rgb(16 24 40 / 6%);
+  --customer-shadow-raised: var(--customer-shadow-line), 0 16px 40px rgb(16 24 40 / 8%);
+}
