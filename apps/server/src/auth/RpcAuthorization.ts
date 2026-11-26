@@ -118,6 +118,9 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.serverLogoutAcpRegistry]: AuthProvidersManageScope,
   [WS_METHODS.serverDiscoverSourceControl]: AuthOrchestrationReadScope,
   [WS_METHODS.serverGetTraceDiagnostics]: AuthDiagnosticsReadScope,
+  [WS_METHODS.serverGetGatewayUplink]: AuthRelayReadScope,
+  [WS_METHODS.serverConfigureGatewayUplink]: AuthRelayWriteScope,
+  [WS_METHODS.serverRemoveGatewayUplink]: AuthRelayWriteScope,
   [WS_METHODS.serverGetProcessDiagnostics]: AuthDiagnosticsReadScope,
   // Thread load balancing reads host load, so it needs thread scope rather than diagnostics scope.
   [WS_METHODS.serverGetHostResources]: AuthOrchestrationReadScope,

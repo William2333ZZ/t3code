@@ -56,6 +56,7 @@ import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { useMediaQuery } from "~/hooks/useMediaQuery";
 import { usePeerLinkHosts } from "~/state/peerLinks";
 import { LoadBalancingSettings } from "./LoadBalancingSettings";
+import { GatewayUplinkRow } from "./GatewayUplinkSetting";
 import { PullRequestRoutingSettings } from "./PullRequestRoutingSettings";
 import { Input } from "../ui/input";
 import {
@@ -1410,6 +1411,9 @@ function ConnectionsSettingsContent({
                       }
                 }
               />
+            ) : null}
+            {canReadRelay ? (
+              <GatewayUplinkRow environmentId={accessEnvironmentId} canManage={canManageRelay} />
             ) : null}
             {accessServerConfig?.environment.capabilities.previewTunnelSetting ? (
               <SettingsRow

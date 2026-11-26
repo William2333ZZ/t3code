@@ -397,6 +397,11 @@ import {
   ServerUpsertKeybindingResult,
 } from "./server.ts";
 import {
+  GatewayUplinkConfigureError,
+  GatewayUplinkConfigureInput,
+  GatewayUplinkStatus,
+} from "./gateway.ts";
+import {
   HostResourcesSnapshot,
   ResourceTelemetryHistory,
   ResourceTelemetryHistoryInput,
@@ -620,6 +625,9 @@ export const WS_METHODS = {
   serverDisableAcpRegistryProvider: "server.disableAcpRegistryProvider",
   serverLogoutAcpRegistry: "server.logoutAcpRegistry",
   serverGetTraceDiagnostics: "server.getTraceDiagnostics",
+  serverGetGatewayUplink: "server.getGatewayUplink",
+  serverConfigureGatewayUplink: "server.configureGatewayUplink",
+  serverRemoveGatewayUplink: "server.removeGatewayUplink",
   serverGetProcessDiagnostics: "server.getProcessDiagnostics",
   serverGetHostResources: "server.getHostResources",
   serverGetProcessResourceHistory: "server.getProcessResourceHistory",
@@ -1112,6 +1120,24 @@ const WsServerLogoutAcpRegistryRpc = Rpc.make(WS_METHODS.serverLogoutAcpRegistry
   payload: AcpRegistryLogoutInput,
   success: AcpRegistryLogoutResult,
   error: Schema.Union([AcpRegistryOperationError, EnvironmentAuthorizationError]),
+});
+
+const WsServerGetGatewayUplinkRpc = Rpc.make(WS_METHODS.serverGetGatewayUplink, {
+  payload: Schema.Struct({}),
+  success: GatewayUplinkStatus,
+  error: EnvironmentAuthorizationError,
+});
+
+const WsServerConfigureGatewayUplinkRpc = Rpc.make(WS_METHODS.serverConfigureGatewayUplink, {
+  payload: GatewayUplinkConfigureInput,
+  success: GatewayUplinkStatus,
+  error: Schema.Union([GatewayUplinkConfigureError, EnvironmentAuthorizationError]),
+});
+
+const WsServerRemoveGatewayUplinkRpc = Rpc.make(WS_METHODS.serverRemoveGatewayUplink, {
+  payload: Schema.Struct({}),
+  success: GatewayUplinkStatus,
+  error: Schema.Union([GatewayUplinkConfigureError, EnvironmentAuthorizationError]),
 });
 
 const WsServerGetTraceDiagnosticsRpc = Rpc.make(WS_METHODS.serverGetTraceDiagnostics, {
@@ -2529,6 +2555,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerDisableAcpRegistryProviderRpc,
   WsServerLogoutAcpRegistryRpc,
   WsServerGetTraceDiagnosticsRpc,
+  WsServerGetGatewayUplinkRpc,
+  WsServerConfigureGatewayUplinkRpc,
+  WsServerRemoveGatewayUplinkRpc,
   WsServerGetProcessDiagnosticsRpc,
   WsServerGetHostResourcesRpc,
   WsServerGetProcessResourceHistoryRpc,

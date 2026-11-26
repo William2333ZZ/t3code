@@ -7,6 +7,7 @@ import {
   AuthOrchestrationReadScope,
   AuthPreviewOperateScope,
   AuthProvidersManageScope,
+  AuthRelayWriteScope,
   AuthSettingsWriteScope,
   AuthSourceControlWriteScope,
   AuthTerminalOperateScope,
@@ -25,6 +26,9 @@ export const CLIENT_GUARDED_RPC_SCOPES = {
   // Stopping a server signals its processes, as closing a terminal does.
   [WS_METHODS.previewStopLocalServer]: AuthTerminalOperateScope,
   [WS_METHODS.serverRunStorageCleanup]: AuthSettingsWriteScope,
+  // Publishing this environment through a gateway decides who can reach it, as linking a relay does.
+  [WS_METHODS.serverConfigureGatewayUplink]: AuthRelayWriteScope,
+  [WS_METHODS.serverRemoveGatewayUplink]: AuthRelayWriteScope,
   // Restarts the server, as an update does.
   [WS_METHODS.serverReclaimDatabaseSpace]: AuthEnvironmentMaintainScope,
   [WS_METHODS.serverCheckOtlpEndpoint]: AuthSettingsWriteScope,

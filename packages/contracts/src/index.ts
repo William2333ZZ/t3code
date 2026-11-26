@@ -27,6 +27,7 @@ export * from "./checkpointDiff.ts";
 export * from "./model.ts";
 export * from "./keybindings.ts";
 export * from "./server.ts";
+export * from "./gateway.ts";
 export * from "./settings.ts";
 export * from "./managedPolicy.ts";
 export * from "./git.ts";
