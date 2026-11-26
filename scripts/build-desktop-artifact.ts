@@ -2852,8 +2852,14 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   buildConfig.publish = null;
   if (!isDesktopPreviewVersion(version)) {
     const publishConfig = yield* resolveGitHubPublishConfig(updateChannel);
+    const feedUrl = yield* Config.String("T3CODE_DESKTOP_UPDATE_FEED_URL").pipe(Config.option);
     if (publishConfig) {
       buildConfig.publish = [publishConfig];
+    } else if (Option.isSome(feedUrl) && URL.canParse(feedUrl.value.trim())) {
+      // A team that hosts its own installers: the app reads the update manifest from this address.
+      buildConfig.publish = [
+        { provider: "generic", url: feedUrl.value.trim().replace(/\/+$/, "") },
+      ];
     } else if (mockUpdates) {
       buildConfig.publish = [
         {
@@ -3896,10 +3902,14 @@ const buildDesktopArtifactUnlocked = Effect.fn("buildDesktopArtifactUnlocked")(f
   const stageProdResourcesDir = path.join(stageAppDir, "apps/desktop/prod-resources");
   yield* fs.copy(stageResourcesDir, stageProdResourcesDir);
 
+  // Passkey entitlements need an Associated Domains profile; a build without one is signed without them.
+  const repoEnv = loadRepoEnv({ repoRoot });
   const configuredMacPasskeySigning =
-    options.platform === "mac" && options.signed
+    options.platform === "mac" &&
+    options.signed &&
+    (repoEnv.T3CODE_MACOS_PROVISIONING_PROFILE?.trim() ?? "") !== ""
       ? yield* Effect.try({
-          try: () => resolveMacPasskeySigningConfiguration(loadRepoEnv({ repoRoot })),
+          try: () => resolveMacPasskeySigningConfiguration(repoEnv),
           catch: MacPasskeySigningConfigurationResolutionError.fromCause,
         })
       : undefined;

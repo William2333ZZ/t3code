@@ -516,6 +516,8 @@ switch in Settings reads that tag and refuses an older desktop build.
 - Repository slug source:
   - `T3CODE_DESKTOP_UPDATE_REPOSITORY` (format `owner/repo`), if set.
   - otherwise `GITHUB_REPOSITORY` from GitHub Actions.
+- Self-hosted feed: with no repository slug, `T3CODE_DESKTOP_UPDATE_FEED_URL` makes the build read updates from that address (`provider: generic`). Serve the same assets from it, and upload the `latest*.yml` last.
+- A signed macOS build includes the passkey entitlements only when `T3CODE_MACOS_PROVISIONING_PROFILE` is set.
 - Required release assets for updater:
   - platform installers (`.exe`, `.dmg`, `.AppImage`, `.deb`, plus macOS `.zip` for Squirrel.Mac update payloads)
   - channel metadata: `latest*.yml` for stable releases, `nightly*.yml` for nightly releases
