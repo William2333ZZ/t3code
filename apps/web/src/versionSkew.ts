@@ -82,11 +82,30 @@ export function resolveVersionMismatch(
   };
 }
 
+// Patch releases keep the client and server compatible, and a server such as a team workstation
+// is not rebuilt for each one. Nightlies of one core version still differ build to build.
+function sharesReleaseLine(clientVersion: string, serverVersion: string): boolean {
+  const client = parseSemver(clientVersion);
+  const server = parseSemver(serverVersion);
+  if (!client || !server) return false;
+  if (client.prerelease[0] === "nightly" && server.prerelease[0] === "nightly") return false;
+  return client.major === server.major && client.minor === server.minor;
+}
+
+/** The skew worth telling the user about: a server on an older release line than this client. */
 export function resolveServerConfigVersionMismatch(
   serverConfig: Pick<ServerConfig, "environment"> | null | undefined,
   resolve: MessageResolver = m,
+  clientVersion: string = APP_VERSION,
 ): VersionMismatch | null {
-  return resolveVersionMismatch(serverConfig?.environment.serverVersion, APP_VERSION, resolve);
+  const mismatch = resolveVersionMismatch(
+    serverConfig?.environment.serverVersion,
+    clientVersion,
+    resolve,
+  );
+  return mismatch !== null && sharesReleaseLine(mismatch.clientVersion, mismatch.serverVersion)
+    ? null
+    : mismatch;
 }
 
 export function resolveServerSelfUpdateCapability(

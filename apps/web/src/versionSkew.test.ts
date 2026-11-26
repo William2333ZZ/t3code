@@ -13,6 +13,7 @@ import {
   isServerUpdateFailureDismissed,
   isVersionMismatchDismissed,
   manualServerUpdateCommand,
+  resolveServerConfigVersionMismatch,
   resolveVersionMismatch,
 } from "./versionSkew";
 
@@ -71,6 +72,22 @@ describe("versionSkew", () => {
       clientVersion: "0.0.34",
       serverVersion: "0.0.33",
       hint: MISMATCH_HINT,
+    });
+  });
+
+  it("tells the user about a server on an older release line, not one a patch behind", () => {
+    const skew = (serverVersion: string, clientVersion: string) =>
+      resolveServerConfigVersionMismatch(
+        { environment: { serverVersion } } as never,
+        undefined,
+        clientVersion,
+      );
+    expect(skew("0.2.0", "0.2.3")).toBeNull();
+    expect(skew("0.2.3", "0.2.0")).toBeNull();
+    expect(skew("0.1.11", "0.2.0")).toMatchObject({ serverVersion: "0.1.11" });
+    expect(skew("0.9.4", "1.0.0")).toMatchObject({ serverVersion: "0.9.4" });
+    expect(skew("0.2.0-nightly.20260508.1", "0.2.0-nightly.20260509.1")).toMatchObject({
+      serverVersion: "0.2.0-nightly.20260508.1",
     });
   });
 
