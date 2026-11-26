@@ -1,7 +1,7 @@
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { m } from "~/i18n/messages";
 import { pipe } from "effect/Function";
-import { ChevronsLeftRightEllipsisIcon, PlusIcon, TerminalIcon } from "lucide-react";
+import { ChevronsLeftRightEllipsisIcon, LaptopIcon, PlusIcon, TerminalIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { T, useGT, useMessages, Var } from "gt-react";
@@ -19,6 +19,7 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import * as Option from "effect/Option";
 
+import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { cn } from "../../lib/utils";
 import { formatDesktopSshTarget } from "./EnvironmentRow";
 import { Input } from "../ui/input";
@@ -125,7 +126,7 @@ export function AddEnvironmentDialog({
     }
     return keys;
   })();
-  const [savedBackendMode, setSavedBackendMode] = useState<"remote" | "ssh">("remote");
+  const [savedBackendMode, setSavedBackendMode] = useState<"remote" | "ssh" | "local">("remote");
   const [savedBackendHost, setSavedBackendHost] = useState(prefill?.host ?? initialHost);
   const [savedBackendPairingCode, setSavedBackendPairingCode] = useState("");
   const [savedBackendSshHost, setSavedBackendSshHost] = useState("");
@@ -378,7 +379,7 @@ export function AddEnvironmentDialog({
     setSavedBackendHost(value);
   };
   const renderConnectionModeCard = (input: {
-    readonly mode: "remote" | "ssh";
+    readonly mode: "remote" | "ssh" | "local";
     readonly title: string;
     readonly description: string;
     readonly icon?: ReactNode;
@@ -525,6 +526,40 @@ export function AddEnvironmentDialog({
           : routeTarget
             ? gt("Add route")
             : gt("Add environment")}
+      </Button>
+    </div>
+  );
+  // This computer is absent from the list only while its own server is turned off.
+  const offersLocalEnvironment =
+    desktopBridge !== undefined && isLocalEnvironmentDisabled() && !routeTarget && prefill === null;
+  const turnOnLocalEnvironment = async () => {
+    if (isAddingSavedBackend || !desktopBridge) return;
+    setIsAddingSavedBackend(true);
+    onErrorChange(null);
+    try {
+      await desktopBridge.setLocalEnvironmentEnabled(true);
+    } catch (cause) {
+      onErrorChange(
+        cause instanceof Error
+          ? (thrownErrorMessage(cause, m) ?? cause.message)
+          : gt("Couldn't change this setting."),
+      );
+      setIsAddingSavedBackend(false);
+    }
+  };
+  const renderLocalModeBody = () => (
+    <div className="space-y-4">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        <T>SuperSteward will restart and start running a server on this computer again.</T>
+      </p>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      <Button
+        variant="outline"
+        className="w-full"
+        disabled={isAddingSavedBackend}
+        onClick={() => void turnOnLocalEnvironment()}
+      >
+        {isAddingSavedBackend ? gt("Restarting…") : gt("Restart and turn on")}
       </Button>
     </div>
   );
@@ -710,7 +745,12 @@ export function AddEnvironmentDialog({
         </DialogHeader>
         <DialogPanel>
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div
+              className={cn(
+                "grid gap-3",
+                offersLocalEnvironment ? "sm:grid-cols-3" : "sm:grid-cols-2",
+              )}
+            >
               {renderConnectionModeCard({
                 mode: "remote",
                 title: gt("Remote link"),
@@ -725,9 +765,21 @@ export function AddEnvironmentDialog({
                     icon: <TerminalIcon aria-hidden className="size-4" />,
                   })
                 : null}
+              {offersLocalEnvironment
+                ? renderConnectionModeCard({
+                    mode: "local",
+                    title: gt("This computer"),
+                    description: gt("Run agents on this computer."),
+                    icon: <LaptopIcon aria-hidden className="size-4" />,
+                  })
+                : null}
             </div>
             <AnimatedHeight>
-              {savedBackendMode === "ssh" ? renderSshFields() : renderRemoteModeBody()}
+              {savedBackendMode === "ssh"
+                ? renderSshFields()
+                : savedBackendMode === "local"
+                  ? renderLocalModeBody()
+                  : renderRemoteModeBody()}
             </AnimatedHeight>
           </div>
         </DialogPanel>

@@ -60,9 +60,9 @@ function Owner() {
   );
 }
 
-function setup() {
+function setup(bridge: Record<string, unknown> = {}) {
   mocks.connectSshEnvironment.mockClear();
-  return stubGlobal("desktopBridge", {});
+  return stubGlobal("desktopBridge", { getLocalEnvironmentEnabled: () => true, ...bridge });
 }
 
 const remoteCard = () => page.getByRole("button", { name: /Remote link/ });
@@ -95,6 +95,26 @@ describe("AddEnvironmentDialog", () => {
     expect(mocks.connectSshEnvironment).toHaveBeenCalledOnce();
 
     await expectDefaultModeAfterReopen();
+  });
+
+  it("offers this computer only while its own server is off, and turns it back on", async () => {
+    {
+      using _bridge = setup();
+      await using _screen = await render(<Owner />);
+      await userEvent.click(page.getByRole("button", { name: "Add environment" }));
+      await expect.element(remoteCard()).toBeInTheDocument();
+      await expect
+        .element(page.getByRole("button", { name: /This computer/ }))
+        .not.toBeInTheDocument();
+    }
+    const setLocalEnvironmentEnabled = vi.fn(async () => {});
+    using _bridge = setup({ getLocalEnvironmentEnabled: () => false, setLocalEnvironmentEnabled });
+    await using _screen = await render(<Owner />);
+
+    await userEvent.click(page.getByRole("button", { name: "Add environment" }));
+    await userEvent.click(page.getByRole("button", { name: /This computer/ }));
+    await userEvent.click(page.getByRole("button", { name: "Restart and turn on" }));
+    expect(setLocalEnvironmentEnabled).toHaveBeenCalledExactlyOnceWith(true);
   });
 
   it("drops an SSH error when switching to Remote link", async () => {
