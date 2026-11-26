@@ -1299,6 +1299,21 @@ export const make = Effect.gen(function* () {
         });
       }
 
+      // A team's own feed is signed by the team's own authority; its build carries that certificate.
+      const feedUrl = Option.getOrUndefined(appUpdateYmlConfig)?.url;
+      const feedAuthority =
+        environment.isPackaged && feedUrl !== undefined && URL.parse(feedUrl)?.protocol === "https:"
+          ? yield* fileSystem
+              .readFileString(environment.updateAuthorityPath, "utf-8")
+              .pipe(Effect.option)
+          : Option.none<string>();
+      if (feedUrl !== undefined && Option.isSome(feedAuthority)) {
+        yield* electronUpdater.trustAuthority({
+          hostname: new URL(feedUrl).hostname.replace(/^\[(.*)\]$/, "$1"),
+          certificate: feedAuthority.value,
+        });
+      }
+
       if (mockUpdates) {
         yield* electronUpdater.setFeedURL({
           provider: "generic",

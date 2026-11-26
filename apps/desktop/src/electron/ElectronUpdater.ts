@@ -4,7 +4,15 @@ import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
 
+import * as Electron from "electron";
 import { AppImageUpdater, autoUpdater } from "electron-updater";
+
+import { isSignedByLinkedAuthority, type LinkedAuthority } from "../window/LinkedAuthorities.ts";
+
+// The partition electron-updater makes its requests in.
+const UPDATER_SESSION = "electron-updater";
+// Tells Chromium to keep its own verdict on a certificate.
+const KEEP_CHROMIUM_VERDICT = -3;
 
 type AutoUpdater = typeof autoUpdater;
 type SpawnLog = (cmd: string, args?: Array<string>, ...rest: Array<unknown>) => Promise<boolean>;
@@ -79,6 +87,8 @@ export class ElectronUpdater extends Context.Service<
   ElectronUpdater,
   {
     readonly setFeedURL: (options: ElectronUpdaterFeedUrl) => Effect.Effect<void>;
+    /** Accepts what this authority signed for its host on update requests, beside the system's roots. */
+    readonly trustAuthority: (authority: LinkedAuthority) => Effect.Effect<void>;
     readonly setAutoDownload: (value: boolean) => Effect.Effect<void>;
     readonly setAutoInstallOnAppQuit: (value: boolean) => Effect.Effect<void>;
     readonly setChannel: (channel: string) => Effect.Effect<void>;
@@ -106,6 +116,19 @@ export const make = ElectronUpdater.of({
     return Effect.suspend(() => {
       autoUpdater.setFeedURL(options);
       return Effect.void;
+    });
+  }),
+  trustAuthority: Effect.fn("ElectronUpdater.trustAuthority")(function (authority) {
+    return Effect.sync(() => {
+      Electron.session
+        .fromPartition(UPDATER_SESSION, { cache: false })
+        .setCertificateVerifyProc((request, callback) => {
+          callback(
+            isSignedByLinkedAuthority([authority], request.hostname, request.certificate.data)
+              ? 0
+              : KEEP_CHROMIUM_VERDICT,
+          );
+        });
     });
   }),
   setAutoDownload: Effect.fn("ElectronUpdater.setAutoDownload")(function (value) {
