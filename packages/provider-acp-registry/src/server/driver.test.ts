@@ -125,6 +125,21 @@ describe("acpRegistrySnapshotReadiness", () => {
     expect(model?.capabilities?.optionDescriptors).toEqual([fastMode]);
   });
 
+  it("tells how to install DeepSeek Harness when its command is missing, and only then", () => {
+    const message = (command: string) =>
+      buildCheckedAcpRegistrySnapshot({
+        ...identity,
+        settings: decodeSettings({ source: "local", commandPath: command }),
+        checkedAt: "2026-08-13T10:00:00.000Z",
+        inspection: { status: "missing_runner", version: null, distribution: "local", command },
+      }).message;
+    expect(message("dsh")).toContain("npm install -g @deepseek-ai/dsh");
+    expect(message("/home/me/.local/bin/dsh")).toContain("npm install -g @deepseek-ai/dsh");
+    expect(message("my-agent")).toBe(
+      "Local ACP executable is not available on this environment's PATH.",
+    );
+  });
+
   it("shows the version reported by a local ACP agent", () => {
     const probe = acpRegistryProbeResult(identity.instanceId, {
       sessionId: "test-session",

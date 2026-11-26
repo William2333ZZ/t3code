@@ -8,7 +8,11 @@ import {
 import { createModelCapabilities } from "@t3tools/shared/model";
 import { assert, it } from "@effect/vitest";
 
-import { hydrateCachedProvider, isCachedProviderCorrelated } from "./providerStatusCache.ts";
+import {
+  hydrateCachedProvider,
+  isCachedProviderCorrelated,
+  orderProviderSnapshots,
+} from "./providerStatusCache.ts";
 
 const emptyCapabilities = createModelCapabilities({ optionDescriptors: [] });
 const CODEX_DRIVER = ProviderDriverKind.make("codex");
@@ -32,6 +36,21 @@ const makeProvider = (
 });
 
 it.layer(NodeServices.layer)("providerStatusCache", (it) => {
+  it("lists the offered agents first, ahead of the ranked drivers and other ACP agents", () => {
+    const acp = ProviderDriverKind.make("acpRegistry");
+    const ordered = orderProviderSnapshots([
+      makeProvider(ProviderDriverKind.make("claudeAgent")),
+      makeProvider(acp, { instanceId: ProviderInstanceId.make("devin") }),
+      makeProvider(acp, { instanceId: ProviderInstanceId.make("workbuddy") }),
+      makeProvider(CODEX_DRIVER),
+      makeProvider(acp, { instanceId: ProviderInstanceId.make("dsh") }),
+    ]);
+    assert.deepEqual(
+      ordered.map((provider) => provider.instanceId),
+      ["dsh", "workbuddy", "codex", "claudeAgent", "devin"],
+    );
+  });
+
   it("hydrates cached provider status while preserving current settings-derived models", () => {
     const cachedCodex = makeProvider(CODEX_DRIVER, {
       checkedAt: "2026-04-10T12:00:00.000Z",

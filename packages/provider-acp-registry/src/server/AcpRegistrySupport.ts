@@ -501,6 +501,7 @@ export type AcpRegistryInspection =
       readonly status: "missing_runner";
       readonly version: null;
       readonly distribution: "local";
+      readonly command: string;
     }
   | {
       readonly status: "unprepared";
@@ -1845,6 +1846,7 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
               status: "missing_runner",
               version: null,
               distribution: "local",
+              command,
             } as const)
           : ({ status: "ready", agentId: command, version: null, distribution: "local" } as const);
       }
