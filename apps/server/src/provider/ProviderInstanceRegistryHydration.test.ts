@@ -23,10 +23,13 @@ import * as ServerConfig from "../config.ts";
 import * as PortScanner from "../preview/PortScanner.ts";
 import { ServerSettingsService } from "../serverSettings.ts";
 import {
+  DEEPSEEK_HARNESS_INSTANCE_ID,
   DEV_REPLAY_INSTANCE_ID,
+  WORKBUDDY_INSTANCE_ID,
   deriveProviderInstanceConfigMap,
   layerSettingsWatcher,
   providerHostLayer,
+  seedOfferedInstances,
   seedDevReplayInstance,
 } from "./ProviderInstanceRegistryHydration.ts";
 import * as ProviderHostLive from "./ProviderHostLive.ts";
@@ -104,6 +107,46 @@ describe("deriveProviderInstanceConfigMap", () => {
 
     expect(merged[instanceId]).toBe(settings.providerInstances[instanceId]);
   });
+});
+
+describe("seedOfferedInstances", () => {
+  effectIt.effect("offers each agent once, and not again after it was removed", () =>
+    Effect.gen(function* () {
+      const settings = yield* ServerSettingsService;
+      const offered = settings.getSettings.pipe(Effect.map((current) => current.providerInstances));
+
+      yield* seedOfferedInstances();
+      expect(yield* offered).toMatchObject({
+        [DEEPSEEK_HARNESS_INSTANCE_ID]: {
+          driver: "acpRegistry",
+          displayName: "DeepSeek Harness",
+          config: { source: "local", commandPath: "dsh", commandArgs: ["--profile", "acp"] },
+        },
+        // Off by default: checking an npx agent would download it unasked.
+        [WORKBUDDY_INSTANCE_ID]: {
+          driver: "acpRegistry",
+          displayName: "WorkBuddy",
+          enabled: false,
+          config: { source: "registry", agentId: "codebuddy-code", authMethodId: "internal" },
+        },
+      });
+      expect((yield* offered)[DEEPSEEK_HARNESS_INSTANCE_ID]?.enabled).toBeUndefined();
+
+      yield* settings.updateProviderInstance({
+        operation: "remove",
+        instanceId: DEEPSEEK_HARNESS_INSTANCE_ID,
+      });
+      yield* seedOfferedInstances();
+      expect(Object.keys(yield* offered)).toEqual([WORKBUDDY_INSTANCE_ID]);
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          ServerConfig.layerTest(process.cwd(), { prefix: "t3-offered-seed-" }),
+          ServerSettingsService.layerTest({}),
+        ).pipe(Layer.provideMerge(NodeServices.layer)),
+      ),
+    ),
+  );
 });
 
 describe("seedDevReplayInstance", () => {

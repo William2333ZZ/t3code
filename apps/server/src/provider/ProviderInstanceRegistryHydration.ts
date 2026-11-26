@@ -127,6 +127,57 @@ export const seedDevReplayInstance = Effect.fn(
   });
 });
 
+export const DEEPSEEK_HARNESS_INSTANCE_ID = ProviderInstanceId.make("dsh");
+export const WORKBUDDY_INSTANCE_ID = ProviderInstanceId.make("workbuddy");
+
+const ACP_REGISTRY_DRIVER = ProviderDriverKind.make("acpRegistry");
+
+// Agents every environment starts with, beside the built-in drivers.
+const OFFERED_INSTANCES: ReadonlyArray<readonly [ProviderInstanceId, ProviderInstanceConfig]> = [
+  [
+    // The agent SuperSteward's own workstations run, found on PATH.
+    DEEPSEEK_HARNESS_INSTANCE_ID,
+    {
+      driver: ACP_REGISTRY_DRIVER,
+      displayName: "DeepSeek Harness",
+      config: { source: "local", commandPath: "dsh", commandArgs: ["--profile", "acp"] },
+    },
+  ],
+  [
+    // WorkBuddy's agent is CodeBuddy Code. Off until asked for: checking an npx agent downloads it.
+    // Its first sign-in method is Tencent's staff login; "internal" is WeChat, the China edition's.
+    WORKBUDDY_INSTANCE_ID,
+    {
+      driver: ACP_REGISTRY_DRIVER,
+      displayName: "WorkBuddy",
+      enabled: false,
+      config: { source: "registry", agentId: "codebuddy-code", authMethodId: "internal" },
+    },
+  ],
+];
+
+/**
+ * Adds each offered agent to the settings once. The marker beside the settings keeps an instance
+ * the user removed from coming back.
+ */
+export const seedOfferedInstances = Effect.fn(
+  "ProviderInstanceRegistryHydration.seedOfferedInstances",
+)(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  const stateDir = (yield* ServerConfig.ServerConfig).stateDir;
+  const serverSettings = yield* Settings.ServerSettingsService;
+  for (const [instanceId, instance] of OFFERED_INSTANCES) {
+    const marker = path.join(stateDir, `provider-offered-${instanceId}`);
+    if (yield* fs.exists(marker)) continue;
+    const settings = yield* serverSettings.getSettings;
+    if (!Object.hasOwn(settings.providerInstances, instanceId)) {
+      yield* serverSettings.updateProviderInstance({ operation: "create", instanceId, instance });
+    }
+    yield* fs.writeFileString(marker, "");
+  }
+});
+
 // A label is display-only, so only kind and config can change what a vault returns.
 const vaultConfigs = (settings: ServerSettings) =>
   Object.entries(settings.secretProviders).map(([id, { kind, config }]) => [id, kind, config]);
@@ -181,6 +232,9 @@ export const layer: Layer.Layer<
     const serverSettings = yield* Settings.ServerSettingsService;
     yield* seedDevReplayInstance().pipe(
       Effect.catchCause((cause) => Effect.logWarning("Dev replay agent unavailable", cause)),
+    );
+    yield* seedOfferedInstances().pipe(
+      Effect.catchCause((cause) => Effect.logWarning("Offered agents were not added", cause)),
     );
     // Subscribe before the seed read so saves during registry construction are queued.
     const settingsChanges = yield* serverSettings.subscribeChanges;

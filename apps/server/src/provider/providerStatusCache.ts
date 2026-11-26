@@ -43,11 +43,20 @@ const driverRank = (driver: string): number => {
   return index === -1 ? BUILT_IN_DRIVER_ORDER.length : index;
 };
 
+// Clients start a new thread on the first provider that can run, so the first place is the default.
+const FIRST_INSTANCE_IDS: ReadonlyArray<string> = ["dsh", "workbuddy"];
+
+const instanceRank = (provider: ServerProvider): number => {
+  const index = FIRST_INSTANCE_IDS.indexOf(provider.instanceId);
+  return index === -1 ? FIRST_INSTANCE_IDS.length : index;
+};
+
 export const orderProviderSnapshots = (
   providers: ReadonlyArray<ServerProvider>,
 ): ReadonlyArray<ServerProvider> =>
   [...providers].toSorted(
     (left, right) =>
+      instanceRank(left) - instanceRank(right) ||
       driverRank(left.driver) - driverRank(right.driver) ||
       left.driver.localeCompare(right.driver) ||
       (left.displayName ?? "").localeCompare(right.displayName ?? "") ||

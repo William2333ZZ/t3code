@@ -159,6 +159,20 @@ export function applyProviderInstanceSettings(
   });
 }
 
+/** The identity a provider's logo is looked up by, for views that hold a snapshot but no entry. */
+export function providerInstanceLogoSource(
+  provider: ServerProvider,
+  settings: Pick<ServerSettings, "providerInstances"> | null | undefined,
+): Pick<ProviderInstanceEntry, "acpRegistryAgentId" | "acpRegistryIconUrl"> {
+  const [entry] = deriveProviderInstanceEntries([provider]);
+  if (entry === undefined) return {};
+  const branded = settings ? applyProviderInstanceBranding(entry, settings) : entry;
+  return {
+    acpRegistryAgentId: branded.acpRegistryAgentId,
+    acpRegistryIconUrl: branded.acpRegistryIconUrl,
+  };
+}
+
 function applyProviderInstanceBranding(
   entry: ProviderInstanceEntry,
   settings: Pick<ServerSettings, "providerInstances">,

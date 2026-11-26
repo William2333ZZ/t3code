@@ -250,7 +250,9 @@ function acpRegistrySnapshotReadiness(
         status: "error",
         message:
           inspection.distribution === "local"
-            ? "Local ACP executable is not available on this environment's PATH."
+            ? /(?:^|[\\/])dsh(?:\.cmd|\.exe)?$/iu.test(inspection.command)
+              ? "DeepSeek Harness (`dsh`) is not installed on this environment. Install it with `npm install -g @deepseek-ai/dsh`, then refresh."
+              : "Local ACP executable is not available on this environment's PATH."
             : `ACP executable '${inspection.runner}' is not available on this environment's PATH.`,
       };
     case "unprepared":

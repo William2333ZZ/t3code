@@ -8,6 +8,7 @@ import type {
   ScopedProjectRef,
   ServerConfig,
   ServerProvider,
+  ServerSettings,
 } from "@t3tools/contracts";
 import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
 import { resolveProviderInstanceDisplayName as agentName } from "@t3tools/client-runtime/state/provider-instance-display";
@@ -104,6 +105,7 @@ import { CodexSetupSection } from "../settings/CodexSetupSection";
 import { readCodexSetupMode } from "../settings/CodexSetupSection.logic";
 import { TerminalViewport } from "../ThreadTerminalDrawer";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
+import { providerInstanceLogoSource } from "../../providerInstances";
 import { ACPRegistryIcon } from "../Icons";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -649,6 +651,7 @@ function AgentsSection({
         <AgentRow
           key={provider.instanceId}
           provider={provider}
+          settings={serverConfig?.settings}
           state={stateOf(provider)}
           action={actionFor(provider)}
         />
@@ -678,7 +681,13 @@ function AgentsSection({
           >
             {found.length > 0 ? gt("Add more agents") : gt("Set up an agent")}
           </span>
-          {showMore ? null : <AgentLogoStack providers={available} acp={acpAllowed} />}
+          {showMore ? null : (
+            <AgentLogoStack
+              providers={available}
+              settings={serverConfig?.settings}
+              acp={acpAllowed}
+            />
+          )}
           <ChevronDownIcon className="ml-auto size-4 text-muted-foreground group-data-panel-open:rotate-180" />
         </CollapsibleTrigger>
         <CollapsiblePanel>
@@ -687,6 +696,7 @@ function AgentsSection({
               <AgentRow
                 key={provider.instanceId}
                 provider={provider}
+                settings={serverConfig?.settings}
                 state={stateOf(provider)}
                 compact
                 action={actionFor(provider)}
@@ -763,9 +773,11 @@ function AgentsSection({
 // A quiet preview of what the fold holds; the names are inside it.
 function AgentLogoStack({
   providers,
+  settings,
   acp,
 }: {
   readonly providers: ReadonlyArray<ServerProvider>;
+  readonly settings: ServerSettings | undefined;
   readonly acp: boolean;
 }) {
   if (providers.length === 0 && !acp) return null;
@@ -777,6 +789,7 @@ function AgentLogoStack({
           driverKind={provider.driver}
           displayName={agentName(provider)}
           iconClassName="size-3.5"
+          {...providerInstanceLogoSource(provider, settings)}
         />
       ))}
       {acp ? <ACPRegistryIcon className="size-3.5" /> : null}
@@ -1208,11 +1221,13 @@ function TerminalAction({
 
 function AgentRow({
   provider,
+  settings,
   state,
   action,
   compact = false,
 }: {
   readonly provider: ServerProvider;
+  readonly settings: ServerSettings | undefined;
   readonly state: ReturnType<typeof welcomeAgentState>;
   readonly action?: ReactNode;
   // A row in the "Add more agents" grid: the button carries the state, so no detail line.
@@ -1245,6 +1260,7 @@ function AgentRow({
           driverKind={provider.driver}
           displayName={name}
           iconClassName={compact ? "size-4" : "size-[18px]"}
+          {...providerInstanceLogoSource(provider, settings)}
         />
       </RowIcon>
       <div className="min-w-0 flex-1">
