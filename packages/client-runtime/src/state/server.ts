@@ -1602,6 +1602,21 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:provider:install-remove",
       tag: WS_METHODS.providerInstallRemove,
     }),
+    gatewayUplink: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:server:gateway-uplink",
+      tag: WS_METHODS.serverGetGatewayUplink,
+      refreshIntervalMs: 5_000,
+    }),
+    configureGatewayUplink: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:gateway-uplink-configure",
+      tag: WS_METHODS.serverConfigureGatewayUplink,
+      concurrency: { mode: "singleFlight", key: ({ environmentId }) => environmentId },
+    }),
+    removeGatewayUplink: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:gateway-uplink-remove",
+      tag: WS_METHODS.serverRemoveGatewayUplink,
+      concurrency: { mode: "singleFlight", key: ({ environmentId }) => environmentId },
+    }),
     traceDiagnostics: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:server:trace-diagnostics",
       tag: WS_METHODS.serverGetTraceDiagnostics,
