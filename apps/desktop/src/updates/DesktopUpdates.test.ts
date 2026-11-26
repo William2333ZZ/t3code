@@ -1400,6 +1400,32 @@ describe("DesktopUpdates under a managed policy", () => {
     ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
   });
 
+  it.effect("trusts the authority a build carries, for the host of its own HTTPS feed only", () =>
+    Effect.forEach(
+      [
+        { url: "https://203.0.113.7:8443/download", trusted: [{ hostname: "203.0.113.7" }] },
+        { url: "http://203.0.113.7:8080/download", trusted: [] },
+      ],
+      ({ url, trusted }) => {
+        const harness = makeHarness({
+          resources: {
+            "app-update.yml": `provider: generic\nurl: ${url}\n`,
+            "update-authority.pem": "AUTHORITY",
+          },
+        });
+        return Effect.scoped(
+          Effect.gen(function* () {
+            yield* (yield* DesktopUpdates.DesktopUpdates).configure;
+            assert.deepEqual(
+              harness.trustedAuthorities(),
+              trusted.map((entry) => ({ ...entry, certificate: "AUTHORITY" })),
+            );
+          }),
+        ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
+      },
+    ),
+  );
+
   it.effect("updates from the administrator's feed", () => {
     const harness = makeHarness({
       // Any user can set the mock flag; it must not redirect a managed feed.

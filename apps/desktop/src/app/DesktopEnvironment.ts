@@ -61,6 +61,8 @@ export class DesktopEnvironment extends Context.Service<
     readonly preloadPath: string;
     readonly compileCachePath: string;
     readonly appUpdateYmlPath: string;
+    /** The certificate authority a build carries for its own update feed, when it has one. */
+    readonly updateAuthorityPath: string;
     readonly devServerUrl: Option.Option<URL>;
     readonly devRemoteT3ServerEntryPath: Option.Option<string>;
     readonly configuredBackendPort: Option.Option<number>;
@@ -215,6 +217,7 @@ const make = Effect.fn("desktop.environment.make")(function* (
     appUpdateYmlPath: input.isPackaged
       ? path.join(resourcesPath, "app-update.yml")
       : path.join(input.appPath, "dev-app-update.yml"),
+    updateAuthorityPath: path.join(resourcesPath, "update-authority.pem"),
     devServerUrl,
     devRemoteT3ServerEntryPath: config.devRemoteT3ServerEntryPath,
     configuredBackendPort: config.configuredBackendPort,

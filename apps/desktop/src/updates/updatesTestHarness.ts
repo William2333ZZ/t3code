@@ -11,6 +11,7 @@ import * as DesktopBackendPool from "../backend/DesktopBackendPool.ts";
 import * as DesktopConfig from "../app/DesktopConfig.ts";
 import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
 import * as ElectronUpdater from "../electron/ElectronUpdater.ts";
+import type { LinkedAuthority } from "../window/LinkedAuthorities.ts";
 import * as ElectronWindow from "../electron/ElectronWindow.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
 import * as DesktopSshEnvironment from "../ssh/DesktopSshEnvironment.ts";
@@ -37,6 +38,8 @@ export interface UpdatesHarnessOptions {
   readonly env?: Record<string, string | undefined>;
   readonly platform?: NodeJS.Platform;
   readonly packageType?: string | undefined;
+  /** Files the packaged app carries in its resources folder, by name. */
+  readonly resources?: Record<string, string>;
   readonly installRecord?: string | undefined;
   readonly policy?: DesktopUpdatePolicy.UpdatePolicy;
   readonly appVersion?: string;
@@ -54,6 +57,7 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
   const checkAllowedDowngrade: boolean[] = [];
   let fullChangelog = false;
   const feedUrls: ElectronUpdater.ElectronUpdaterFeedUrl[] = [];
+  const trustedAuthorities: LinkedAuthority[] = [];
   const listeners = new Map<string, Set<(...args: readonly unknown[]) => void>>();
   const sentStates: DesktopUpdateState[] = [];
   const installSteps: string[] = [];
@@ -79,6 +83,10 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
     setFeedURL: (options) =>
       Effect.sync(() => {
         feedUrls.push(options);
+      }),
+    trustAuthority: (authority) =>
+      Effect.sync(() => {
+        trustedAuthorities.push(authority);
       }),
     setAutoDownload: () => Effect.void,
     setAutoInstallOnAppQuit: () => Effect.void,
@@ -255,6 +263,10 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
         ? (installRecords.get(path) ?? previousInstallRecord)
         : undefined;
       if (installRecord !== undefined) return Effect.succeed(installRecord);
+      const resource = path.startsWith("/missing/resources/")
+        ? options.resources?.[path.slice("/missing/resources/".length)]
+        : undefined;
+      if (resource !== undefined) return Effect.succeed(resource);
       return path === "/missing/resources/package-type" && options.packageType !== undefined
         ? Effect.succeed(options.packageType)
         : Effect.fail(
@@ -323,6 +335,7 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
     previousInstallRecord: () => previousInstallRecord,
     downloadCount: () => downloadCount,
     feedUrls: (): ElectronUpdater.ElectronUpdaterFeedUrl[] => feedUrls,
+    trustedAuthorities: (): LinkedAuthority[] => trustedAuthorities,
     fullChangelog: () => fullChangelog,
     /** Whether each feed check could offer an older release, and the flag now. */
     checkAllowedDowngrade,

@@ -2817,6 +2817,11 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
   wslRuntimeBundled = false,
   arch?: typeof BuildArch.Type,
 ) {
+  // A team's own update feed may be signed by its own authority; the app carries it to check the feed.
+  const feedAuthority = yield* Config.String("T3CODE_DESKTOP_UPDATE_FEED_CA").pipe(Config.option);
+  const feedAuthorityResources = Option.isSome(feedAuthority)
+    ? [{ from: (yield* Path.Path).resolve(feedAuthority.value), to: "update-authority.pem" }]
+    : [];
   const buildConfig: Record<string, unknown> = {
     afterPack: (yield* Path.Path).join(yield* RepoRoot, "scripts/prepare-server-compile-cache.cjs"),
     appId: DESKTOP_APP_ID,
@@ -2845,6 +2850,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       ...(platform === "mac" ? MAC_APPLE_SPEECH_EXTRA_RESOURCES : []),
       ...(platform === "win" ? WINDOWS_SERVER_EXTRA_RESOURCES : []),
       ...(platform === "win" && wslRuntimeBundled ? WSL_RUNTIME_EXTRA_RESOURCES : []),
+      ...feedAuthorityResources,
     ],
   };
   const updateChannel = resolveDesktopUpdateChannel(version);
