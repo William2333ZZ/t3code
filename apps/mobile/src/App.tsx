@@ -64,6 +64,8 @@ import {
   startDevAutoConnect,
   withoutPairingTarget,
 } from "./features/connection/devAutoConnect";
+import { pairingFormPathForLink } from "./features/connection/pairing";
+import { rememberLinkedAuthority } from "./native/linkedAuthorities";
 import {
   resolvePendingNewTaskPromptLink,
   takeNewTaskPromptLink,
@@ -125,8 +127,9 @@ const linkingConfig = {
 } as const;
 
 function getAppStateFromPath(path: string, options: Parameters<typeof getStateFromPath>[1]) {
+  rememberLinkedAuthority(path);
   return pipe(
-    getStateFromPath(path, options),
+    getStateFromPath(pairingFormPathForLink(path), options),
     (state) => restoreDraftLinkState(state, path),
     (state) => restoreSettingsLinkState(state, settingsLinkPage()),
     takeThreadPromptLink,
@@ -143,6 +146,9 @@ const appLinking = {
     "t3code://",
     "t3code-dev://",
     "t3code-preview://",
+    "supersteward://",
+    "supersteward-dev://",
+    "supersteward-preview://",
     DEFAULT_HOSTED_APP_URL,
   ],
   config: { initialRouteName: "Home" },

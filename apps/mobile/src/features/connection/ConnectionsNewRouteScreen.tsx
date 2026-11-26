@@ -25,6 +25,7 @@ import { SettingsScreen } from "../settings/components/SettingsScreen";
 import { AppText as Text, AppTextInput, type AppTextInputProps } from "../../components/ui/AppText";
 import { FrostedCutout } from "../../components/ui/FrostedCutout";
 import { buildPairingUrl, extractPairingUrlFromQrPayload, parsePairingUrl } from "./pairing";
+import { rememberLinkedAuthority } from "../../native/linkedAuthorities";
 import { useRemoteConnections } from "../../state/use-remote-environment-registry";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { hasCloudPublicConfig } from "../cloud/publicConfig";
@@ -49,8 +50,9 @@ export function ConnectionsNewRouteScreen({
   route,
 }: StaticScreenProps<ConnectionsNewRouteParams | undefined>) {
   const params = route.params ?? {};
-  // Dev-only prefill prevents production links from supplying an attacker-chosen host and token.
-  const routePairingUrl = __DEV__ ? (params.pairingUrl?.trim() ?? "") : "";
+  // A link may fill the form, as a scanned code does; it never connects. The person sees the host
+  // and presses Connect. Pairing from the link itself stays dev-only (startDevAutoConnect).
+  const routePairingUrl = params.pairingUrl?.trim() ?? "";
   const known = useAtomValue(linkedEnvironmentPrefillAtom);
   const linked = known !== null && known.environmentId === params.linked ? known : null;
   // A new prefill link replaces whatever the form held.
@@ -148,6 +150,7 @@ function PairingForm({
     setScannerLocked(true);
 
     try {
+      rememberLinkedAuthority(data);
       const pairingUrl = extractPairingUrlFromQrPayload(data);
       const { host, code } = parsePairingUrl(pairingUrl);
       setHostInput(host);

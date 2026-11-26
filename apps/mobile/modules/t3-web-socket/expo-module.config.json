@@ -1,4 +1,4 @@
 {
   "platforms": ["apple"],
-  "apple": { "modules": ["T3WebSocketModule"] }
+  "apple": { "modules": ["T3WebSocketModule", "T3LinkedAuthoritiesModule"] }
 }
