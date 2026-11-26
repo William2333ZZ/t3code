@@ -82,7 +82,7 @@ export function extractPairingUrlFromQrPayload(payload: string): string {
 
   try {
     const url = new URL(trimmed);
-    if (url.protocol === "t3code:") {
+    if (url.protocol === "t3code:" || /^supersteward(?:-[a-z]+)?:$/.test(url.protocol)) {
       const pairingUrl = url.searchParams.get(MOBILE_PAIRING_URL_PARAM)?.trim() ?? "";
       if (pairingUrl.length > 0) {
         return pairingUrl;
@@ -91,4 +91,41 @@ export function extractPairingUrlFromQrPayload(payload: string): string {
   } catch {}
 
   return trimmed;
+}
+
+/**
+ * A `pair?pairingUrl=…` link, as an invitation page or the desktop app makes it, as the path of
+ * the pairing form filled with it. The link only fills the form: the person sees the host and
+ * chooses to connect. Anything else on the link (`routeFor`, `autoConnect`) is dropped.
+ */
+export function pairingFormPathForLink(path: string): string {
+  const query = path.indexOf("?");
+  if (query < 0 || path.slice(0, query).replace(/^\/+|\/+$/g, "") !== "pair") return path;
+  const pairingUrl = new URLSearchParams(path.slice(query + 1))
+    .get(MOBILE_PAIRING_URL_PARAM)
+    ?.trim();
+  if (!pairingUrl) return path;
+  return `connections/new?${new URLSearchParams([[MOBILE_PAIRING_URL_PARAM, pairingUrl]])}`;
+}
+
+/**
+ * The certificate authority a pairing link or scanned code carries for the host it pairs with:
+ * `ca`, DER in base64url. Only for an https host, the one the pairing url itself names.
+ */
+export function linkedAuthorityOf(
+  link: string,
+): { readonly host: string; readonly certificate: string } | null {
+  const query = link.indexOf("?");
+  if (query < 0) return null;
+  const params = new URLSearchParams(link.slice(query + 1).split("#")[0]);
+  const carried = params.get("ca")?.trim() ?? "";
+  const pairingUrl = params.get(MOBILE_PAIRING_URL_PARAM)?.trim() ?? "";
+  if (!/^[A-Za-z0-9_-]+$/.test(carried) || !URL.canParse(pairingUrl)) return null;
+  const target = new URL(pairingUrl);
+  if (target.protocol !== "https:") return null;
+  const base64 = carried.replaceAll("-", "+").replaceAll("_", "/");
+  return {
+    host: target.hostname,
+    certificate: base64.padEnd(Math.ceil(base64.length / 4) * 4, "="),
+  };
 }

@@ -80,7 +80,8 @@ const RELEASE_ASSETS = {
 const VARIANT_CONFIG = {
   development: {
     appName: "T3 Code Dev",
-    scheme: "t3code-dev",
+    // The first is the one the dev tooling opens; the second is what a SuperSteward pairing link uses.
+    scheme: ["t3code-dev", "supersteward-dev"],
     iosBundleIdentifier: "com.t3tools.t3code.dev",
     androidPackage: "com.t3tools.t3code.dev",
     relyingParty: "clerk.t3.codes",
@@ -88,7 +89,7 @@ const VARIANT_CONFIG = {
   },
   preview: {
     appName: "T3 Code Preview",
-    scheme: "t3code-preview",
+    scheme: ["t3code-preview", "supersteward-preview"],
     iosBundleIdentifier: "com.t3tools.t3code.preview",
     androidPackage: "com.t3tools.t3code.preview",
     relyingParty: "clerk.t3.codes",
@@ -96,7 +97,7 @@ const VARIANT_CONFIG = {
   },
   production: {
     appName: "T3 Code",
-    scheme: "t3code",
+    scheme: ["t3code", "supersteward"],
     iosBundleIdentifier: "com.t3tools.t3code",
     androidPackage: "com.t3tools.t3code",
     relyingParty: "clerk.t3.codes",
@@ -236,7 +237,7 @@ const config: ExpoConfig = {
   name: variant.appName,
   slug: "t3-code",
   platforms: ["ios", "android"],
-  scheme: variant.scheme,
+  scheme: [...variant.scheme],
   version: repoEnv.T3CODE_MOBILE_VERSION ?? "2.3.0",
   runtimeVersion: {
     // Skip costly fingerprinting on dev launches; preview and production OTAs require matching native projects.

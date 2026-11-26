@@ -185,4 +185,9 @@ private final class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
   func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
     module?.didComplete(task: task, error: error)
   }
+
+  func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+    let (disposition, credential) = LinkedAuthorities.shared.answer(challenge)
+    completionHandler(disposition, credential)
+  }
 }
