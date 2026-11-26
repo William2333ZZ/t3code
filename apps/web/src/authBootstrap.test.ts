@@ -418,6 +418,49 @@ describe("resolveInitialServerAuthGateState", () => {
     expect(testApi.calls.session).toBe(2);
   });
 
+  it.each([
+    { name: "a member", scopes: ["orchestration:read"], manager: false },
+    { name: "a manager", scopes: ["orchestration:read", "access:write"], manager: true },
+  ] as const)(
+    "names $name on every path that reports an authenticated session",
+    async ({ scopes, manager }) => {
+      const signedOut = unauthenticatedSession(LOOPBACK_AUTH);
+      const signedIn = { ...authenticatedSession(LOOPBACK_AUTH), scopes, person: "alice" };
+      const identified = { status: "authenticated", identity: { person: "alice", manager } };
+      let session: AuthSessionState = signedIn;
+      await installAuthApi({
+        session: () => session,
+        browserSession: () =>
+          Effect.sync(() => {
+            session = signedIn;
+            return browserSession(scopes);
+          }),
+      });
+      const {
+        resolveInitialServerAuthGateState,
+        submitServerAuthCredential,
+        __resetServerAuthBootstrapForTests,
+      } = await import("./environments/primary");
+
+      // A browser that already holds a session.
+      await expect(resolveInitialServerAuthGateState()).resolves.toEqual(identified);
+
+      // A pairing link opened directly.
+      __resetServerAuthBootstrapForTests();
+      session = signedOut;
+      installTestBrowser("http://localhost/#token=link-token");
+      await expect(resolveInitialServerAuthGateState()).resolves.toEqual(identified);
+
+      // A token typed into /pair: the next route reads the state this call cached.
+      __resetServerAuthBootstrapForTests();
+      session = signedOut;
+      installTestBrowser("http://localhost/");
+      await submitServerAuthCredential("typed-token");
+      session = signedOut;
+      await expect(resolveInitialServerAuthGateState()).resolves.toEqual(identified);
+    },
+  );
+
   it("reports a rejected URL token without caching false success", async () => {
     const cause = new EnvironmentAuthInvalidError({
       code: "auth_invalid",

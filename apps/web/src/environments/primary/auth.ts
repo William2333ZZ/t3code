@@ -8,7 +8,12 @@ import type {
   AuthSessionId,
   AuthSessionState,
 } from "@t3tools/contracts";
-import { EnvironmentHttpCommonError, PRIMARY_LOCAL_ENVIRONMENT_ID } from "@t3tools/contracts";
+import {
+  AuthAccessWriteScope,
+  EnvironmentHttpCommonError,
+  PRIMARY_LOCAL_ENVIRONMENT_ID,
+  sessionGrantsScope,
+} from "@t3tools/contracts";
 import type { EnvironmentHttpCommonError as EnvironmentHttpCommonErrorType } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -138,12 +143,26 @@ export interface ServerClientSessionRecord {
 }
 
 type ServerAuthGateState =
-  | { status: "authenticated" }
+  // `identity` is absent for the environment's own sessions; the customer UI is chosen from it.
+  | { status: "authenticated"; identity?: { person: string; manager: boolean } }
   | {
       status: "requires-auth";
       auth: AuthSessionState["auth"];
       errorMessage?: string;
     };
+
+// A manager is a named person who may manage access, the same rule as state/session.ts.
+function authenticatedGateState(session: AuthSessionState): ServerAuthGateState {
+  return session.person === undefined
+    ? { status: "authenticated" }
+    : {
+        status: "authenticated",
+        identity: {
+          person: session.person,
+          manager: sessionGrantsScope(session, AuthAccessWriteScope),
+        },
+      };
+}
 
 let bootstrapPromise: Promise<ServerAuthGateState> | null = null;
 let resolvedAuthenticatedGateState: ServerAuthGateState | null = null;
@@ -321,7 +340,7 @@ function isTransportError(error: unknown): boolean {
 async function bootstrapServerAuth(urlCredential: string | null): Promise<ServerAuthGateState> {
   const currentSession = await fetchSessionState();
   if (currentSession.authenticated && !urlCredential) {
-    return { status: "authenticated" };
+    return authenticatedGateState(currentSession);
   }
 
   const bootstrapCredential = urlCredential ?? getDesktopBootstrapCredential();
@@ -334,8 +353,7 @@ async function bootstrapServerAuth(urlCredential: string | null): Promise<Server
 
   try {
     await exchangeBootstrapCredential(bootstrapCredential);
-    await waitForAuthenticatedSessionAfterBootstrap();
-    return { status: "authenticated" };
+    return authenticatedGateState(await waitForAuthenticatedSessionAfterBootstrap());
   } catch (error) {
     return {
       status: "requires-auth",
@@ -355,8 +373,9 @@ export async function submitServerAuthCredential(credential: string): Promise<vo
 
   resolvedAuthenticatedGateState = null;
   await exchangeBootstrapCredential(trimmedCredential);
-  await waitForAuthenticatedSessionAfterBootstrap();
-  resolvedAuthenticatedGateState = { status: "authenticated" };
+  resolvedAuthenticatedGateState = authenticatedGateState(
+    await waitForAuthenticatedSessionAfterBootstrap(),
+  );
   bootstrapPromise = null;
   explicitPairingRequested = false;
   stripPairingTokenFromUrl();
