@@ -1,4 +1,10 @@
-import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ChartNoAxesColumnIcon,
+  HouseIcon,
+  SettingsIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { T, useGT } from "gt-react";
 import { memo } from "react";
@@ -255,6 +261,10 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     closeMobileSidebar();
     void navigate({ to: "/settings" });
   };
+  const handleSuperStewardClick = () => {
+    closeMobileSidebar();
+    void navigate({ to: "/c", search: { ui: "ops" } });
+  };
 
   const handleUsageClick = () => {
     if (isMobile) {
@@ -281,6 +291,11 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
         </SidebarMenuItem>
       ) : (
         <>
+          <SidebarUtilityItem
+            icon={<HouseIcon />}
+            label={gt("Back to SuperSteward")}
+            onClick={handleSuperStewardClick}
+          />
           <SidebarUtilityItem
             icon={<SettingsIcon />}
             label={gt("Settings")}
