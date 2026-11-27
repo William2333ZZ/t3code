@@ -3,13 +3,7 @@ import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/model
 import type { CustomerProjectStatus } from "./customerProjects.logic";
 
 /** Where an employee is with someone's work, as their companion acts it out. */
-export type EmployeeWorkState =
-  | "idle"
-  | "working"
-  | "verifying"
-  | "waiting"
-  | "failed"
-  | "finished";
+export type EmployeeWorkState = "idle" | "working" | "waiting" | "failed" | "finished";
 
 /** A row of a Petdex spritesheet; `waving` is only ever a greeting. */
 export type CompanionAnimation =
@@ -42,7 +36,6 @@ export const COMPANION_ANIMATIONS: Record<
 const ANIMATION_BY_STATE: Record<EmployeeWorkState, CompanionAnimation> = {
   idle: "idle",
   working: "running",
-  verifying: "review",
   waiting: "waiting",
   failed: "failed",
   finished: "jumping",
@@ -52,20 +45,12 @@ export function companionAnimation(state: EmployeeWorkState): CompanionAnimation
   return ANIMATION_BY_STATE[state];
 }
 
-/**
- * Only work in progress loops: anything else plays a few times and rests on its first frame, so
- * an idle screen does not keep repainting.
- */
-export function companionLoops(animation: CompanionAnimation): boolean {
-  return animation === "running" || animation === "review";
-}
+/** Every animation plays this many times, then rests on its row's first frame: no screen keeps repainting. */
+export const COMPANION_PLAYS = 3;
 
 const JUST_FINISHED_MS = 5 * 60_000;
 
-/**
- * One thread's state for its employee. Nothing reports verification yet, so `verifying` is never
- * derived here; the companion can still show it when something does.
- */
+/** One thread's state for its employee. */
 export function employeeWorkState(
   status: CustomerProjectStatus,
   latestRun: EnvironmentThreadShell["latestRun"],
@@ -91,7 +76,6 @@ export function employeeWorkState(
 
 const STATE_PRIORITY: ReadonlyArray<EmployeeWorkState> = [
   "working",
-  "verifying",
   "waiting",
   "failed",
   "finished",
@@ -104,25 +88,25 @@ export function busiestWorkState(states: ReadonlyArray<EmployeeWorkState>): Empl
 }
 
 /**
- * The sheet URL a client may draw: http(s) or a data image, resolved against the app's own
- * address. Anything else falls back to the pixel robot.
+ * The sheet URL a client may draw: an absolute https address or a data image. A relative one would
+ * resolve against whichever client draws it, not the environment. Anything else gets the robot.
  */
-export function companionSheetUrl(raw: string | undefined, base: string): string | null {
-  if (raw === undefined) return null;
-  let url: URL;
-  try {
-    url = new URL(raw, base);
-  } catch {
-    return null;
-  }
-  if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+export function companionSheetUrl(raw: string | undefined): string | null {
+  if (raw === undefined || !URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  if (url.protocol === "https:") return url.href;
   return url.protocol === "data:" && /^data:image\//i.test(url.href) ? url.href : null;
 }
 
-/** Whether a loaded image has the shape of a Petdex sheet of this version. */
-export function companionSheetFits(width: number, height: number, version: 1 | 2): boolean {
+/** Whether a loaded image has the shape of a Petdex sheet of this version, or of either without one. */
+export function companionSheetFits(width: number, height: number, version?: 1 | 2): boolean {
   if (width <= 0 || height <= 0) return false;
-  const rows = version === 2 ? 11 : 9;
-  const expected = (COMPANION_COLUMNS * COMPANION_FRAME_WIDTH) / (rows * COMPANION_FRAME_HEIGHT);
-  return Math.abs(width / height - expected) < 0.01;
+  const rows = version === undefined ? [9, 11] : [version === 2 ? 11 : 9];
+  return rows.some(
+    (count) =>
+      Math.abs(
+        width / height -
+          (COMPANION_COLUMNS * COMPANION_FRAME_WIDTH) / (count * COMPANION_FRAME_HEIGHT),
+      ) < 0.01,
+  );
 }

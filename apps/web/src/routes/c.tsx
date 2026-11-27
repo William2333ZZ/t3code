@@ -15,7 +15,7 @@ function validateCustomerSearch(search: Record<string, unknown>): { ui?: UiModeO
 
 export const Route = createFileRoute("/c")({
   validateSearch: validateCustomerSearch,
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, search }) => {
     // Both faces work on the primary environment, so they need that session.
     if (context.authGateState.status !== "authenticated") {
       throw redirect({ to: "/pair", replace: true });
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/c")({
     const identity = context.authGateState.identity;
     return {
       customerFace: {
-        face: currentUiFace(identity),
+        face: currentUiFace(identity, search),
         identity,
         canOperate: canUseOperatorFace(identity),
       },

@@ -5,7 +5,6 @@ import {
   COMPANION_ANIMATIONS,
   busiestWorkState,
   companionAnimation,
-  companionLoops,
   companionSheetFits,
   companionSheetUrl,
   employeeWorkState,
@@ -28,20 +27,12 @@ describe("companionAnimation", () => {
   it.each([
     ["idle", "idle", 0],
     ["working", "running", 7],
-    ["verifying", "review", 8],
     ["waiting", "waiting", 6],
     ["failed", "failed", 5],
     ["finished", "jumping", 4],
   ] as const)("acts out %s with the %s row", (state, animation, row) => {
     expect(companionAnimation(state)).toBe(animation);
     expect(COMPANION_ANIMATIONS[animation].row).toBe(row);
-  });
-
-  it("loops only work in progress", () => {
-    expect(companionLoops("running")).toBe(true);
-    expect(companionLoops("review")).toBe(true);
-    expect(companionLoops("idle")).toBe(false);
-    expect(companionLoops("waiting")).toBe(false);
   });
 });
 
@@ -67,32 +58,28 @@ describe("employeeWorkState", () => {
 });
 
 describe("companion sheets", () => {
-  const base = "https://app.example/c";
-
-  it("accepts web and data-image addresses and resolves relative ones", () => {
-    expect(companionSheetUrl("https://pets.example/a.webp", base)).toBe(
-      "https://pets.example/a.webp",
-    );
-    expect(companionSheetUrl("/pets/a.webp", base)).toBe("https://app.example/pets/a.webp");
-    expect(companionSheetUrl("data:image/webp;base64,AAAA", base)).toBe(
-      "data:image/webp;base64,AAAA",
-    );
+  it("accepts absolute https and data-image addresses", () => {
+    expect(companionSheetUrl("https://pets.example/a.webp")).toBe("https://pets.example/a.webp");
+    expect(companionSheetUrl("data:image/webp;base64,AAAA")).toBe("data:image/webp;base64,AAAA");
   });
 
   it("falls back for anything else", () => {
-    expect(companionSheetUrl(undefined, base)).toBeNull();
-    expect(companionSheetUrl("javascript:alert(1)", base)).toBeNull();
-    expect(companionSheetUrl("data:text/html,<b>", base)).toBeNull();
-    expect(companionSheetUrl("file:///etc/passwd", base)).toBeNull();
-    expect(companionSheetUrl("http://[", base)).toBeNull();
+    expect(companionSheetUrl(undefined)).toBeNull();
+    expect(companionSheetUrl("/pets/a.webp")).toBeNull();
+    expect(companionSheetUrl("http://pets.example/a.webp")).toBeNull();
+    expect(companionSheetUrl("javascript:alert(1)")).toBeNull();
+    expect(companionSheetUrl("data:text/html,<b>")).toBeNull();
+    expect(companionSheetUrl("file:///etc/passwd")).toBeNull();
+    expect(companionSheetUrl("http://[")).toBeNull();
   });
 
-  it("checks the sheet's shape against its version", () => {
+  it("checks the sheet's shape against its version, or either version without one", () => {
     expect(companionSheetFits(1536, 1872, 1)).toBe(true);
     expect(companionSheetFits(1536, 2288, 2)).toBe(true);
     expect(companionSheetFits(1536, 2288, 1)).toBe(false);
-    expect(companionSheetFits(768, 936, 1)).toBe(true);
-    expect(companionSheetFits(512, 512, 1)).toBe(false);
+    expect(companionSheetFits(1536, 2288)).toBe(true);
+    expect(companionSheetFits(768, 936)).toBe(true);
+    expect(companionSheetFits(512, 512)).toBe(false);
     expect(companionSheetFits(0, 0, 1)).toBe(false);
   });
 });

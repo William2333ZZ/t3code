@@ -1,3 +1,4 @@
+import { mostUrgentByProject } from "./attention.logic";
 import { T } from "gt-react";
 
 import { useAllEnvironmentShellsBootstrapped } from "../state/entities";
@@ -10,11 +11,7 @@ export function FaceProjectsPage() {
   const operator = useCustomerFace().face === "operator";
   const ready = useAllEnvironmentShellsBootstrapped();
   const { projects, attention } = useFaceProjects();
-  const attentionByProject = new Map(
-    attention.map(
-      (item) => [`${item.projectRef.environmentId}\0${item.projectRef.projectId}`, item] as const,
-    ),
-  );
+  const attentionByProject = mostUrgentByProject(attention);
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-12 pt-10 pb-8">
       <h1 className="text-2xl font-bold">{operator ? <T>All projects</T> : <T>My projects</T>}</h1>

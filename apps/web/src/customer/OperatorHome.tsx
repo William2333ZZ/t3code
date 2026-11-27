@@ -10,6 +10,7 @@ import {
   summarizeOperatorDesk,
   type AttentionItem,
   type AttentionKind,
+  mostUrgentByProject,
 } from "./attention.logic";
 import { Companion } from "./Companion";
 import type { CompanionAnimation } from "./companion.logic";
@@ -133,11 +134,7 @@ export function OperatorHome() {
   const { projects, attention, nowMs } = useFaceProjects();
   const [prompt, setPrompt] = useState("");
   const summary = summarizeOperatorDesk(projects, attention);
-  const attentionByProject = new Map(
-    attention.map(
-      (item) => [`${item.projectRef.environmentId}\0${item.projectRef.projectId}`, item] as const,
-    ),
-  );
+  const attentionByProject = mostUrgentByProject(attention);
   const idle = projects.filter((project) => project.status === "idle").length;
 
   return (

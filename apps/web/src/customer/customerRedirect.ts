@@ -40,6 +40,9 @@ export function enforceUiMode(
 }
 
 /** The face /c shows this session, after the root route has stored any `?ui=` override. */
-export function currentUiFace(identity: UiIdentity | undefined): "customer" | "operator" {
-  return resolveUiFace({ identity, storage: overrideStorage(), dev: import.meta.env.DEV });
+export function currentUiFace(
+  identity: UiIdentity | undefined,
+  search: Readonly<Record<string, unknown>>,
+): "customer" | "operator" {
+  return resolveUiFace({ identity, search, storage: overrideStorage(), dev: import.meta.env.DEV });
 }

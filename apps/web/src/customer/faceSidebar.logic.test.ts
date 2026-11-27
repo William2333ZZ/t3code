@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { docTitle, projectDocFiles } from "./customerDocs.logic";
+import { docTitle, hasDocsFolder, projectDocFiles, projectDocFolders } from "./customerDocs.logic";
 import {
   activeSidebarItem,
   projectOfPath,
@@ -57,6 +57,19 @@ describe("projectDocFiles", () => {
         { path: "src/docs/x.md", kind: "file" },
       ]),
     ).toEqual(["docs/README.md", "docs/guide/setup.markdown", "docs/zeta.md"]);
-    expect(docTitle("docs/guide/setup.markdown")).toBe("guide/setup");
+    expect(
+      projectDocFolders([
+        { path: "docs/guide", kind: "directory" },
+        { path: "docs/api", kind: "directory" },
+        { path: "docs/zeta.md", kind: "file" },
+      ]),
+    ).toEqual(["docs/api", "docs/guide"]);
+    expect(docTitle("docs/guide/setup.markdown")).toBe("setup");
+  });
+
+  it("tells a project without a docs folder from one with it", () => {
+    expect(hasDocsFolder([{ path: "src", kind: "directory" }])).toBe(false);
+    expect(hasDocsFolder([{ path: "docs", kind: "file" }])).toBe(false);
+    expect(hasDocsFolder([{ path: "docs", kind: "directory" }])).toBe(true);
   });
 });

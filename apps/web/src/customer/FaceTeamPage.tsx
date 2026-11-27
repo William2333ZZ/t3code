@@ -16,7 +16,6 @@ import { useFaceProjects } from "./useFaceData";
 const SHOWN_STATES: ReadonlyArray<EmployeeWorkState> = [
   "idle",
   "working",
-  "verifying",
   "waiting",
   "failed",
   "finished",
@@ -27,7 +26,6 @@ function useStateLabels(): Record<EmployeeWorkState, string> {
   return {
     idle: gt("Free", { $context: "an employee has nothing to do" }),
     working: gt("Working", { $context: "an employee is doing the work" }),
-    verifying: gt("Checking", { $context: "an employee is verifying the work" }),
     waiting: gt("Waiting for someone", { $context: "an employee waits on a person" }),
     failed: gt("Stuck", { $context: "an employee's work failed" }),
     finished: gt("Just finished", { $context: "an employee finished a piece of work" }),

@@ -108,6 +108,18 @@ export function deriveAttention(
   );
 }
 
+/** Each project's first item, which is its most urgent: `deriveAttention` sorts most urgent first. */
+export function mostUrgentByProject(
+  items: ReadonlyArray<AttentionItem>,
+): ReadonlyMap<string, AttentionItem> {
+  const byProject = new Map<string, AttentionItem>();
+  for (const item of items) {
+    const key = `${item.projectRef.environmentId}\0${item.projectRef.projectId}`;
+    if (!byProject.has(key)) byProject.set(key, item);
+  }
+  return byProject;
+}
+
 export interface OperatorDeskSummary {
   readonly needYou: number;
   /** Projects moving along on their own: working, and nothing about them needs anyone. */

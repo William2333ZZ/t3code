@@ -155,10 +155,11 @@ export function resolveUiNavigation(input: {
 /** The face a /c page shows: the full UI on a /c link is shown the customer face, as in v1. */
 export function resolveUiFace(input: {
   readonly identity: UiIdentity | undefined;
+  readonly search: Readonly<Record<string, unknown>>;
   readonly storage: OverrideStorage | null;
   readonly dev: boolean;
 }): "customer" | "operator" {
-  const override = readUiModeOverride({}, input.storage);
+  const override = readUiModeOverride(input.search, input.storage);
   return resolveUiMode({ identity: input.identity, override, dev: input.dev }) === "operator"
     ? "operator"
     : "customer";

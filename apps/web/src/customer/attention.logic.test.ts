@@ -5,6 +5,7 @@ import { makeThreadFixture, type ThreadFixtureOverrides } from "../test-fixtures
 import type { Project, Thread } from "../types";
 import {
   deriveAttention,
+  mostUrgentByProject,
   operatorHeadline,
   summarizeOperatorDesk,
   type AttentionItem,
@@ -115,6 +116,9 @@ describe("deriveAttention", () => {
       ["long-work", "long", "2026-03-09T11:00:00.000Z"],
     ]);
     expect(items[0]!.projectTitle).toBe("b");
+    const marker = mostUrgentByProject(items);
+    expect(marker.get(`${environmentId}\0b`)?.kind).toBe("failed");
+    expect(marker.get(`${environmentId}\0a`)?.kind).toBe("input");
   });
 
   it("orders the same kind oldest first", () => {

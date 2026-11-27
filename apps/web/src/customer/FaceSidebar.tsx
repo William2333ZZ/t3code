@@ -15,7 +15,7 @@ import { useState, type ReactNode } from "react";
 import { cn } from "../lib/utils";
 import { usePrimaryEnvironmentId } from "../state/environments";
 import { useEnvironmentScope } from "../state/session";
-import type { AttentionItem } from "./attention.logic";
+import { mostUrgentByProject, type AttentionItem } from "./attention.logic";
 import { customerHue } from "./CustomerAvatar";
 import { useCustomerFace } from "./customerFace";
 import type { CustomerProject } from "./customerProjects.logic";
@@ -226,11 +226,7 @@ export function FaceSidebar() {
   const canReadFiles = useEnvironmentScope(primaryEnvironmentId, AuthFilesystemReadScope);
   const { projects, attention } = useFaceProjects();
   const active = activeSidebarItem(pathname);
-  const attentionByProject = new Map(
-    attention.map(
-      (item) => [`${item.projectRef.environmentId}\0${item.projectRef.projectId}`, item] as const,
-    ),
-  );
+  const attentionByProject = mostUrgentByProject(attention);
   const operator = face === "operator";
 
   const labels: Record<SidebarItemId, string> = {

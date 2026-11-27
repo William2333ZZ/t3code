@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from "react";
 
 import {
   COMPANION_ANIMATIONS,
-  companionLoops,
+  COMPANION_PLAYS,
   companionSheetFits,
   companionSheetUrl,
   type CompanionAnimation,
@@ -25,7 +25,7 @@ export function Companion(props: {
   label?: string;
 }) {
   const companion = props.employee?.companion;
-  const url = companionSheetUrl(companion?.sheetUrl, window.location.href);
+  const url = companionSheetUrl(companion?.sheetUrl);
   const [loaded, setLoaded] = useState<{ url: string; fits: boolean } | null>(null);
   const ready = url !== null && loaded?.url === url && loaded.fits;
 
@@ -43,7 +43,7 @@ export function Companion(props: {
                 fits: companionSheetFits(
                   event.currentTarget.naturalWidth,
                   event.currentTarget.naturalHeight,
-                  companion?.version ?? 1,
+                  companion?.version,
                 ),
               })
             }
@@ -62,7 +62,7 @@ export function Companion(props: {
     "--companion-row": row,
     "--companion-frames": frames,
     "--companion-duration": `${durationMs}ms`,
-    "--companion-iterations": companionLoops(props.animation) ? "infinite" : 3,
+    "--companion-iterations": COMPANION_PLAYS,
   } as CSSProperties;
   return (
     <span

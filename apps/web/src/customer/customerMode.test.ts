@@ -193,17 +193,25 @@ describe("isCustomerPath", () => {
 
 describe("resolveUiFace", () => {
   it("shows the face the stored override and the identity choose", () => {
-    expect(resolveUiFace({ identity: manager, storage: memoryStorage(), dev: false })).toBe(
-      "operator",
-    );
+    expect(
+      resolveUiFace({ identity: manager, search: {}, storage: memoryStorage(), dev: false }),
+    ).toBe("operator");
     const simple = memoryStorage({ "supersteward:ui-mode": "simple" });
-    expect(resolveUiFace({ identity: manager, storage: simple, dev: false })).toBe("customer");
-    const ops = memoryStorage({ "supersteward:ui-mode": "ops" });
-    expect(resolveUiFace({ identity: member, storage: ops, dev: false })).toBe("customer");
-    // The full UI asked to show a /c page gets the customer face, as before.
-    expect(resolveUiFace({ identity: machine, storage: memoryStorage(), dev: false })).toBe(
+    expect(resolveUiFace({ identity: manager, search: {}, storage: simple, dev: false })).toBe(
       "customer",
     );
+    const ops = memoryStorage({ "supersteward:ui-mode": "ops" });
+    expect(resolveUiFace({ identity: member, search: {}, storage: ops, dev: false })).toBe(
+      "customer",
+    );
+    // The full UI asked to show a /c page gets the customer face, as before.
+    expect(
+      resolveUiFace({ identity: machine, search: {}, storage: memoryStorage(), dev: false }),
+    ).toBe("customer");
+    // Without browser storage the link's own `?ui=` still decides.
+    expect(
+      resolveUiFace({ identity: manager, search: { ui: "simple" }, storage: null, dev: false }),
+    ).toBe("customer");
   });
 
   it("offers the operator face to everyone but members", () => {
