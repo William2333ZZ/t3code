@@ -11,7 +11,8 @@ import { useThreadPreviewState } from "../previewStateStore";
 import { previewEnvironment } from "../state/preview";
 import { useEnvironmentScope } from "../state/session";
 import { useAtomCommand } from "../state/use-atom-command";
-import { CustomerAvatar } from "./CustomerAvatar";
+import { useEnvironment } from "../state/environments";
+import { Companion } from "./Companion";
 
 function hostOf(url: string): string {
   try {
@@ -44,10 +45,17 @@ function StatusBar({ address }: { address: string | null }) {
   );
 }
 
-function Placeholder({ children }: { children: React.ReactNode }) {
+function Placeholder({
+  children,
+  threadRef,
+}: {
+  children: React.ReactNode;
+  threadRef: ScopedThreadRef;
+}) {
+  const employee = useEnvironment(threadRef.environmentId)?.serverConfig?.environment.employee;
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-(--customer-canvas) p-7 text-center text-muted-foreground">
-      <CustomerAvatar seed="preview" size={44} />
+      <Companion employee={employee} animation="idle" size={48} seed="preview" />
       <div className="max-w-xs">{children}</div>
     </div>
   );
@@ -87,7 +95,7 @@ function LivePreview({ threadRef }: { threadRef: ScopedThreadRef }) {
       {activeTabId !== null ? (
         <PreviewView threadRef={threadRef} visible hideChrome />
       ) : (
-        <Placeholder>
+        <Placeholder threadRef={threadRef}>
           <T>Nothing to look at yet. When the team gets the page running, it appears here.</T>
         </Placeholder>
       )}
@@ -103,7 +111,7 @@ export function CustomerPreviewPane({ threadRef }: { threadRef: ScopedThreadRef 
   return (
     <>
       <StatusBar address={null} />
-      <Placeholder>
+      <Placeholder threadRef={threadRef}>
         <T>The live view isn't available on this connection. The conversation still works.</T>
       </Placeholder>
     </>

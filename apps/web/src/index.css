@@ -2723,4 +2723,36 @@ code {
   --customer-shadow-line: 0 1px 2px rgb(16 24 40 / 6%);
   --customer-shadow-card: var(--customer-shadow-line), 0 8px 24px rgb(16 24 40 / 6%);
   --customer-shadow-raised: var(--customer-shadow-line), 0 16px 40px rgb(16 24 40 / 8%);
+  --customer-sidebar: #fbfbfc;
+  --customer-sidebar-line: #eceef2;
+  --customer-nav-ink: #3c4250;
+}
+
+/* A Petdex companion (src/customer/Companion.tsx): 192x208 frames, 8 to a row, one row per
+   animation. The component sets the row, frame count, duration and iteration count. */
+@keyframes customer-companion-frames {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: calc(var(--companion-width) * var(--companion-frames) * -1);
+  }
+}
+
+[data-customer-ui] .customer-companion {
+  display: inline-block;
+  flex: none;
+  width: var(--companion-width);
+  height: calc(var(--companion-width) * 208 / 192);
+  background-repeat: no-repeat;
+  background-size: calc(var(--companion-width) * 8) auto;
+  background-position-y: calc(var(--companion-width) * 208 / 192 * var(--companion-row) * -1);
+  animation: customer-companion-frames var(--companion-duration) steps(var(--companion-frames))
+    var(--companion-iterations);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-customer-ui] .customer-companion {
+    animation: none;
+  }
 }

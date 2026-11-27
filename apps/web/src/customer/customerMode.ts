@@ -4,17 +4,19 @@ export interface UiIdentity {
   readonly manager: boolean;
 }
 
-export type UiMode = "customer" | "full";
-export type UiModeOverride = "simple" | "full";
+/** `customer` and `operator` are the two faces of the app under `/c`; `full` is the developer UI. */
+export type UiMode = "customer" | "operator" | "full";
+export type UiModeOverride = "simple" | "ops" | "full";
 
 const OVERRIDE_STORAGE_KEY = "supersteward:ui-mode";
 
 type OverrideStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 /**
- * A member (a person without access:write) gets the customer UI. `simple` shows it to anyone;
- * `full` is honoured only where the full UI was already theirs, or in a dev build. This picks a
- * UI, it is not a permission: the server decides what a session may read and do.
+ * A member (a person without access:write) gets the customer face; a manager and the environment's
+ * own sessions get the operator face, with the full UI one `?ui=full` away. `simple` shows the customer face to anyone;
+ * `ops` and `full` are honoured only for someone who is not a member, or in a dev build. This
+ * picks a UI, it is not a permission: the server decides what a session may read and do.
  */
 export function resolveUiMode(input: {
   readonly identity: UiIdentity | undefined;
@@ -23,17 +25,30 @@ export function resolveUiMode(input: {
 }): UiMode {
   const member = input.identity !== undefined && !input.identity.manager;
   if (input.override === "simple") return "customer";
-  if (input.override === "full") return member && !input.dev ? "customer" : "full";
-  return member ? "customer" : "full";
+  if (member && !input.dev) return "customer";
+  if (input.override === "ops") return "operator";
+  if (input.override === "full") return "full";
+  return member ? "customer" : "operator";
 }
 
-/** `?ui=simple|full` is remembered; any other `?ui=` value forgets it. */
+/** Whether this session may look at the operator face at all; members may not. */
+export function canUseOperatorFace(identity: UiIdentity | undefined): boolean {
+  return identity === undefined || identity.manager;
+}
+
+const OVERRIDES = new Set<unknown>(["simple", "ops", "full"]);
+
+function isOverride(value: unknown): value is UiModeOverride {
+  return OVERRIDES.has(value);
+}
+
+/** `?ui=simple|ops|full` is remembered; any other `?ui=` value forgets it. */
 export function readUiModeOverride(
   search: Readonly<Record<string, unknown>>,
   storage: OverrideStorage | null,
 ): UiModeOverride | null {
   const requested = search.ui;
-  if (requested === "simple" || requested === "full") {
+  if (isOverride(requested)) {
     storage?.setItem(OVERRIDE_STORAGE_KEY, requested);
     return requested;
   }
@@ -42,7 +57,7 @@ export function readUiModeOverride(
     return null;
   }
   const stored = storage?.getItem(OVERRIDE_STORAGE_KEY);
-  return stored === "simple" || stored === "full" ? stored : null;
+  return isOverride(stored) ? stored : null;
 }
 
 function pathSegments(pathname: string): ReadonlyArray<string> {
@@ -57,10 +72,24 @@ function decodePathSegment(segment: string): string {
   }
 }
 
-/** `/c` and `/c/<environment>/<project>`. `/c/<one segment>` would match a thread route instead. */
+// Pages directly under /c. Any other `/c/<one segment>` is the developer thread route.
+const CUSTOMER_PAGES = new Set(["projects", "attention", "team", "docs"]);
+
+/** `/c`, its pages, `/c/<environment>/<project>` and `/c/docs/<environment>/<project>`. */
 export function isCustomerPath(pathname: string): boolean {
   const segments = pathSegments(pathname);
-  return segments[0] === "c" && (segments.length === 1 || segments.length === 3);
+  if (segments[0] !== "c") return false;
+  switch (segments.length) {
+    case 1:
+    case 3:
+      return true;
+    case 2:
+      return CUSTOMER_PAGES.has(segments[1]!);
+    case 4:
+      return segments[1] === "docs";
+    default:
+      return false;
+  }
 }
 
 // Pages that sign a browser in; they have to work before anyone knows who the session is.
@@ -100,8 +129,8 @@ export function customerRedirectTarget(
 
 /**
  * The root route's decision for one navigation: which UI the session gets, and the redirect that
- * keeps it there. Leaving the customer UI needs an explicit `?ui=full`, so its own pages stay
- * reachable for a manager who was sent a link to one.
+ * keeps it there. Both faces live under /c and keep the session there; leaving needs an explicit
+ * `?ui=full`, so the faces' own pages stay reachable for anyone who was sent a link to one.
  */
 export function resolveUiNavigation(input: {
   readonly identity: UiIdentity | undefined;
@@ -113,11 +142,24 @@ export function resolveUiNavigation(input: {
 }): { readonly mode: UiMode; readonly redirect: CustomerRedirect | { readonly to: "/" } | null } {
   const override = readUiModeOverride(input.search, input.storage);
   const mode = resolveUiMode({ identity: input.identity, override, dev: input.dev });
-  if (mode === "customer") {
+  if (mode !== "full") {
     return { mode, redirect: customerRedirectTarget(input.pathname, input.readThreadProjectId) };
   }
   return {
     mode,
     redirect: input.search.ui === "full" && isCustomerPath(input.pathname) ? { to: "/" } : null,
   };
+}
+
+/** The face a /c page shows: the full UI on a /c link is shown the customer face, as in v1. */
+export function resolveUiFace(input: {
+  readonly identity: UiIdentity | undefined;
+  readonly search: Readonly<Record<string, unknown>>;
+  readonly storage: OverrideStorage | null;
+  readonly dev: boolean;
+}): "customer" | "operator" {
+  const override = readUiModeOverride(input.search, input.storage);
+  return resolveUiMode({ identity: input.identity, override, dev: input.dev }) === "operator"
+    ? "operator"
+    : "customer";
 }

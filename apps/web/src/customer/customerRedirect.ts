@@ -3,7 +3,7 @@ import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
 import { redirect } from "@tanstack/react-router";
 
 import { readThreadShell } from "../state/entities";
-import { resolveUiNavigation, type UiIdentity } from "./customerMode";
+import { resolveUiFace, resolveUiNavigation, type UiIdentity } from "./customerMode";
 
 function overrideStorage(): Storage | null {
   try {
@@ -16,7 +16,7 @@ function overrideStorage(): Storage | null {
 
 /**
  * The root route calls this on every navigation of a signed-in session. It returns whether the
- * session is in the customer UI, and throws the redirect that keeps each UI on its own routes.
+ * session is in one of the /c faces, and throws the redirect that keeps each UI on its own routes.
  */
 export function enforceUiMode(
   identity: UiIdentity | undefined,
@@ -32,9 +32,17 @@ export function enforceUiMode(
       readThreadShell(scopeThreadRef(environmentId as EnvironmentId, threadId as ThreadId))
         ?.projectId ?? null,
   });
-  if (target === null) return mode === "customer";
+  if (target === null) return mode !== "full";
   if (target.to === "/c/$environmentId/$projectId") {
     throw redirect({ to: target.to, params: target.params, replace: true });
   }
   throw redirect({ to: target.to, replace: true });
+}
+
+/** The face /c shows this session, after the root route has stored any `?ui=` override. */
+export function currentUiFace(
+  identity: UiIdentity | undefined,
+  search: Readonly<Record<string, unknown>>,
+): "customer" | "operator" {
+  return resolveUiFace({ identity, search, storage: overrideStorage(), dev: import.meta.env.DEV });
 }

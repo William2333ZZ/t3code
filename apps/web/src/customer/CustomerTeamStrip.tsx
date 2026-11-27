@@ -2,7 +2,8 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import { T, useGT } from "gt-react";
 
 import { useEnvironment } from "../state/environments";
-import { CustomerAvatar } from "./CustomerAvatar";
+import { Companion } from "./Companion";
+import { companionAnimation, type EmployeeWorkState } from "./companion.logic";
 
 /**
  * Who is working for the customer. An environment names at most one employee; without one the
@@ -11,6 +12,8 @@ import { CustomerAvatar } from "./CustomerAvatar";
 export function CustomerTeamStrip(props: {
   environmentId: EnvironmentId;
   working: boolean;
+  /** What the employee's companion acts out. */
+  state: EmployeeWorkState;
   queuedCount: number;
 }) {
   const gt = useGT();
@@ -21,7 +24,12 @@ export function CustomerTeamStrip(props: {
         <T>Your team</T>
       </span>
       <div className="flex min-w-0 items-center gap-2" data-testid="customer-team-member">
-        <CustomerAvatar seed={employee?.id ?? "assistant"} size={26} />
+        <Companion
+          employee={employee}
+          animation={companionAnimation(props.state)}
+          size={30}
+          seed={employee?.id ?? "assistant"}
+        />
         <div className="min-w-0">
           <div className="truncate text-(length:--customer-note)/4 font-medium">
             {employee?.name ?? gt("Assistant", { $context: "an AI assistant with no name" })}

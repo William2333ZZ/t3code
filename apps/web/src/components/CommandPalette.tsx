@@ -70,6 +70,7 @@ import {
   FolderGit2Icon,
   FolderIcon,
   FolderPlusIcon,
+  HouseIcon,
   MessageSquareDashedIcon,
   LinkIcon,
   MessageSquareIcon,
@@ -1723,6 +1724,17 @@ function OpenCommandPaletteDialog(props: {
       },
     });
   }
+
+  actionItems.push({
+    kind: "action",
+    value: "action:supersteward-face",
+    searchTerms: ["supersteward", "operations", "customer", "face", "home"],
+    title: gt("Open SuperSteward"),
+    icon: <HouseIcon className={ITEM_ICON_CLASS} />,
+    run: async () => {
+      await navigate({ to: "/c", search: { ui: "ops" } });
+    },
+  });
 
   actionItems.push({
     kind: "action",
