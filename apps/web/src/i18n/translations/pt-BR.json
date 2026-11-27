@@ -3013,6 +3013,7 @@
   "6ecee74294001493": "Nothing needs you. {moving, plural, =1 {1 project is} other {{moving} projects are}} moving along.",
   "93e8dc5f0ce833e9": "{needYou, plural, =1 {1 thing needs you.} other {{needYou} things need you.}}",
   "ad1507f6287a6b9b": "{needYou, plural, =1 {1 thing needs you} other {{needYou} things need you}}; {moving, plural, =1 {1 other project is} other {{moving} other projects are}} moving along.",
+  "3b657cddf57f0c03": "{greeting} {sentence}",
   "16c0eb7f8f87dadf": "The team is working on it",
   "cff84ea88171b008": "Waiting for your answer",
   "990d4bce1e5b7359": "Paused, waiting for a permission",

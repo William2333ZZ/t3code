@@ -178,7 +178,8 @@ function FaceSwitch() {
 
 function Account(props: { collapsed: boolean }) {
   const gt = useGT();
-  const { face, identity } = useCustomerFace();
+  const { face, identity, canOperate } = useCustomerFace();
+  const operating = face === "operator" && canOperate;
   const name = identity?.person ?? gt("This machine");
   const initial = [...name][0]?.toUpperCase();
   const avatar = (
@@ -187,7 +188,7 @@ function Account(props: { collapsed: boolean }) {
       aria-label={props.collapsed ? name : undefined}
       className={cn(
         "flex size-7.5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-        face === "operator" ? "bg-primary text-primary-foreground" : "bg-border",
+        operating ? "bg-primary text-primary-foreground" : "bg-border",
       )}
     >
       {initial}
@@ -199,7 +200,7 @@ function Account(props: { collapsed: boolean }) {
       {avatar}
       <div className="min-w-0 flex-1">
         <div className="truncate text-(length:--customer-note)/4.5 font-semibold">{name}</div>
-        {face === "operator" ? (
+        {operating ? (
           <div className="text-xs/4 text-muted-foreground">
             <T context="the role of a person who runs the team">Operations</T>
           </div>

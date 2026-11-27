@@ -168,5 +168,6 @@ export function operatorHeadline(
               { needYou, moving },
             ),
           );
-  return `${greeting} ${sentence}`;
+  // Chinese and Japanese join two sentences without a space; the translation decides.
+  return resolve(msg("{greeting} {sentence}", { greeting, sentence }));
 }
