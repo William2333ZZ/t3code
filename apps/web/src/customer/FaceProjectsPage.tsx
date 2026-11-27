@@ -4,6 +4,8 @@ import { T } from "gt-react";
 import { useAllEnvironmentShellsBootstrapped } from "../state/entities";
 import { useCustomerFace } from "./customerFace";
 import { CustomerProjectCard } from "./CustomerProjectCard";
+import { OpsProjectGrid } from "./OpsPanels";
+import { useOpsOverview } from "./opsSource";
 import { useFaceProjects } from "./useFaceData";
 
 /** Every project the session can see: the customer's own, or for an operator everyone's. */
@@ -12,10 +14,15 @@ export function FaceProjectsPage() {
   const ready = useAllEnvironmentShellsBootstrapped();
   const { projects, attention } = useFaceProjects();
   const attentionByProject = mostUrgentByProject(attention);
+  const ops = useOpsOverview();
+  const overview =
+    operator && (ops.status === "ready" || ops.status === "lost") ? ops.overview : null;
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-12 pt-10 pb-8">
       <h1 className="text-2xl font-bold">{operator ? <T>All projects</T> : <T>My projects</T>}</h1>
-      {projects.length > 0 ? (
+      {overview !== null ? (
+        <OpsProjectGrid overview={overview} />
+      ) : projects.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3.5">
           {projects.map((project) => {
             const kind = operator

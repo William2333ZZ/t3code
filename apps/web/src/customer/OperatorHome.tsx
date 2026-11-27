@@ -16,6 +16,9 @@ import { Companion } from "./Companion";
 import type { CompanionAnimation } from "./companion.logic";
 import { HomeCrew, StartBox, usePrimaryEmployee } from "./CustomerHome";
 import { CustomerProjectCard } from "./CustomerProjectCard";
+import { needsYou } from "./opsOverview.logic";
+import { NeedsYouList, OpsConnectCard, OpsHome } from "./OpsPanels";
+import { useOpsOverview } from "./opsSource";
 import { useFaceProjects } from "./useFaceData";
 
 const HOME_ATTENTION_COUNT = 6;
@@ -126,8 +129,17 @@ function AttentionGrid(props: { items: ReadonlyArray<AttentionItem>; nowMs: numb
   );
 }
 
-/** The operator's first screen: how things stand, the box, what needs them, and every project. */
+/** The operator's first screen: from the connected service when there is one, else from this app's threads. */
 export function OperatorHome() {
+  const ops = useOpsOverview();
+  return ops.status === "ready" || ops.status === "lost" ? (
+    <OpsHome state={ops} />
+  ) : (
+    <LocalOperatorHome />
+  );
+}
+
+function LocalOperatorHome() {
   const gt = useGT();
   const messages = useMessages();
   const ready = useAllEnvironmentShellsBootstrapped();
@@ -139,6 +151,7 @@ export function OperatorHome() {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-12 pt-10 pb-8">
+      <OpsConnectCard />
       <div className="flex items-center gap-4">
         <HomeCrew size={52} />
         <div>
@@ -228,12 +241,16 @@ export function OperatorHome() {
 export function OperatorAttentionPage() {
   const ready = useAllEnvironmentShellsBootstrapped();
   const { attention, nowMs } = useFaceProjects();
+  const ops = useOpsOverview();
+  const overview = ops.status === "ready" || ops.status === "lost" ? ops.overview : null;
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-12 pt-10 pb-8">
       <h1 className="text-2xl font-bold">
         <T>Needs you</T>
       </h1>
-      {attention.length > 0 ? (
+      {overview !== null ? (
+        <NeedsYouList items={needsYou(overview)} />
+      ) : attention.length > 0 ? (
         <AttentionGrid items={attention} nowMs={nowMs} />
       ) : (
         <div className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-muted-foreground">

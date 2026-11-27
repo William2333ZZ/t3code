@@ -11,6 +11,8 @@ import {
 } from "./companion.logic";
 import { usePrimaryEmployee } from "./CustomerHome";
 import { useCustomerFace } from "./customerFace";
+import { OpsTeamPage } from "./OpsPanels";
+import { useOpsOverview } from "./opsSource";
 import { useFaceProjects } from "./useFaceData";
 
 const SHOWN_STATES: ReadonlyArray<EmployeeWorkState> = [
@@ -37,6 +39,22 @@ function useStateLabels(): Record<EmployeeWorkState, string> {
  * operator also sees the people paired with the machine and how many projects each has.
  */
 export function FaceTeamPage() {
+  const operator = useCustomerFace().face === "operator";
+  const ops = useOpsOverview();
+  if (operator && (ops.status === "ready" || ops.status === "lost") && ops.overview !== null) {
+    return (
+      <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-12 pt-10 pb-8">
+        <h1 className="text-2xl font-bold">
+          <T>Team</T>
+        </h1>
+        <OpsTeamPage base={ops.base} overview={ops.overview} />
+      </main>
+    );
+  }
+  return <LocalTeamPage />;
+}
+
+function LocalTeamPage() {
   const gt = useGT();
   const operator = useCustomerFace().face === "operator";
   const employee = usePrimaryEmployee();
