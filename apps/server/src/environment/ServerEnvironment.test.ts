@@ -204,6 +204,20 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("ServerEnvironmen
       employee: { id: "polaris", name: "Polaris", alias: "司南", title: "Engineer" },
       label: "Polaris · Engineer",
     },
+    {
+      name: "a profile can link a companion spritesheet",
+      file: JSON.stringify({
+        id: "argus",
+        name: "Argus",
+        companion: { sheetUrl: "https://pets.example/argus.webp", version: 2 },
+      }),
+      employee: {
+        id: "argus",
+        name: "Argus",
+        companion: { sheetUrl: "https://pets.example/argus.webp", version: 2 },
+      },
+      label: "Argus",
+    },
     // A profile that is not one leaves an ordinary machine, named the usual way.
     { name: "a broken profile is ignored", file: "{ not json", employee: undefined, label: "Mac" },
     { name: "a missing profile is ignored", file: undefined, employee: undefined, label: "Mac" },

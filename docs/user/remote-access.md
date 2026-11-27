@@ -634,6 +634,13 @@ machine by the employee's name and title, and a new thread opens with a card say
 goes to. A file that cannot be read is ignored and the machine keeps its usual name. Telling the
 agent itself who it is belongs in the agent's own instructions file.
 
+The employee can have an animated companion in the customer and operator views. Add
+`"companion": { "sheetUrl": "https://…/sheet.webp", "version": 2 }`, pointing at a spritesheet in
+the [Petdex](https://petdex.dev) format (192×208 frames, 8 per row; version 1 has 9 rows, version 2
+has 11). The sheet is loaded by each viewer's browser, so host it somewhere they can reach over
+HTTPS, and only use one you have the right to use. Without one, or if it fails to load, a small
+pixel robot stands in.
+
 ## Manage or revoke access
 
 On the host, **Settings → Sharing & access** lets authorized administrators create

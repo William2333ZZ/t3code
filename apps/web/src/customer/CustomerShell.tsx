@@ -1,8 +1,7 @@
 import { SYSTEM_LANGUAGE } from "@t3tools/client-runtime/locales";
-import { Link } from "@tanstack/react-router";
-import { useGT } from "gt-react";
 import { useEffect, type ReactNode } from "react";
 
+import markUrl from "../../../../assets/supersteward/mark.svg";
 import { APP_BASE_NAME } from "../branding";
 import {
   ensureClientSettingsHydrated,
@@ -12,12 +11,13 @@ import {
 import { getThemeSnapshot } from "../hooks/useTheme";
 
 /**
- * The frame every customer screen sits in: the light token scope (see `[data-customer-ui]` in
- * index.css) and nothing of the developer app around it.
+ * The frame every screen of both faces sits in: the light token scope (see `[data-customer-ui]`
+ * in index.css), the sidebar, and nothing of the developer app around it.
  */
 export function CustomerShell(props: {
   /** For a member: they have no settings page, so the language is the browser's, not the default. */
   followBrowserLanguage: boolean;
+  sidebar: ReactNode;
   children: ReactNode;
 }) {
   const { followBrowserLanguage, children } = props;
@@ -50,32 +50,19 @@ export function CustomerShell(props: {
   return (
     <div
       data-customer-ui
-      className="flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-background font-sans text-sm/[22px] text-foreground"
+      className="flex h-dvh min-h-0 w-full overflow-hidden bg-background font-sans text-sm/[22px] text-foreground"
     >
-      {children}
+      {props.sidebar}
+      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }
 
-/** The product mark; it leads back to the customer's projects. */
-export function CustomerHomeLink() {
-  const gt = useGT();
-  return (
-    <Link
-      to="/c"
-      aria-label={gt("Back to my projects")}
-      className="flex size-6.5 shrink-0 items-center justify-center rounded-lg bg-primary"
-    >
-      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 8 8" shapeRendering="crispEdges">
-        <rect x="1" y="1" width="6" height="4" className="fill-primary-foreground" />
-        <rect x="2" y="2" width="1" height="1" className="fill-primary" />
-        <rect x="5" y="2" width="1" height="1" className="fill-primary" />
-        <rect x="2" y="5" width="4" height="2" className="fill-(--customer-mark)" />
-      </svg>
-    </Link>
-  );
+/** The product's own mark, as the app icons are drawn from it. */
+export function BrandMark(props: { className?: string }) {
+  return <img src={markUrl} alt="" className={props.className} />;
 }
 
 export function CustomerBrandName() {
-  return <span className="text-base font-semibold">{APP_BASE_NAME}</span>;
+  return <span className="text-base font-bold">{APP_BASE_NAME}</span>;
 }

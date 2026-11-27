@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  canUseOperatorFace,
   customerRedirectTarget,
   isCustomerPath,
   readUiModeOverride,
+  resolveUiFace,
   resolveUiMode,
   resolveUiNavigation,
 } from "./customerMode";
@@ -25,7 +27,7 @@ function memoryStorage(initial: Record<string, string> = {}) {
 describe("resolveUiMode", () => {
   it.each([
     { identity: machine, override: null, dev: false, mode: "full" },
-    { identity: manager, override: null, dev: false, mode: "full" },
+    { identity: manager, override: null, dev: false, mode: "operator" },
     { identity: member, override: null, dev: false, mode: "customer" },
     { identity: member, override: null, dev: true, mode: "customer" },
     { identity: machine, override: "simple", dev: false, mode: "customer" },
@@ -35,6 +37,10 @@ describe("resolveUiMode", () => {
     { identity: manager, override: "full", dev: false, mode: "full" },
     { identity: member, override: "full", dev: false, mode: "customer" },
     { identity: member, override: "full", dev: true, mode: "full" },
+    { identity: machine, override: "ops", dev: false, mode: "operator" },
+    { identity: manager, override: "ops", dev: false, mode: "operator" },
+    { identity: member, override: "ops", dev: false, mode: "customer" },
+    { identity: member, override: "ops", dev: true, mode: "operator" },
   ] as const)(
     "identity=$identity.person manager=$identity.manager override=$override dev=$dev is $mode",
     ({ identity, override, dev, mode }) => {
@@ -49,6 +55,8 @@ describe("readUiModeOverride", () => {
     expect(readUiModeOverride({ ui: "simple" }, storage)).toBe("simple");
     expect(readUiModeOverride({}, storage)).toBe("simple");
     expect(readUiModeOverride({ ui: "full" }, storage)).toBe("full");
+    expect(readUiModeOverride({ ui: "ops" }, storage)).toBe("ops");
+    expect(readUiModeOverride({}, storage)).toBe("ops");
     expect(readUiModeOverride({ ui: "auto" }, storage)).toBeNull();
     expect(readUiModeOverride({}, storage)).toBeNull();
   });
@@ -63,12 +71,22 @@ describe("customerRedirectTarget", () => {
   const projectOf = (environmentId: string, threadId: string) =>
     environmentId === "env-1" && threadId === "thread-1" ? "project-1" : null;
 
-  it.each(["/c", "/c/", "/c/env-1/project-1", "/pair", "/connect", "/connect-agent", "/guest"])(
-    "lets %s load",
-    (pathname) => {
-      expect(customerRedirectTarget(pathname, projectOf)).toBeNull();
-    },
-  );
+  it.each([
+    "/c",
+    "/c/",
+    "/c/env-1/project-1",
+    "/c/projects",
+    "/c/attention",
+    "/c/team",
+    "/c/docs",
+    "/c/docs/env-1/project-1",
+    "/pair",
+    "/connect",
+    "/connect-agent",
+    "/guest",
+  ])("lets %s load", (pathname) => {
+    expect(customerRedirectTarget(pathname, projectOf)).toBeNull();
+  });
 
   it.each([
     "/",
@@ -82,6 +100,7 @@ describe("customerRedirectTarget", () => {
     // One segment under /c is the developer thread route with an environment named "c".
     "/c/thread-1",
     "/c/env-1/project-1/extra",
+    "/c/env-1/project-1/docs",
   ])("sends %s home", (pathname) => {
     expect(customerRedirectTarget(pathname, projectOf)).toEqual({ to: "/c" });
   });
@@ -120,17 +139,27 @@ describe("resolveUiNavigation", () => {
     ).toEqual({ mode: "customer", redirect: { to: "/c" } });
   });
 
-  it("leaves a manager where they are, and takes them out of /c only when asked", () => {
+  it("keeps a manager in the operator face, and takes them out of /c only when asked", () => {
     expect(resolveUiNavigation({ ...base, identity: manager, pathname: "/", search: {} })).toEqual({
-      mode: "full",
-      redirect: null,
+      mode: "operator",
+      redirect: { to: "/c" },
     });
     expect(resolveUiNavigation({ ...base, identity: manager, pathname: "/c", search: {} })).toEqual(
-      { mode: "full", redirect: null },
+      { mode: "operator", redirect: null },
     );
     expect(
       resolveUiNavigation({ ...base, identity: manager, pathname: "/c", search: { ui: "full" } }),
     ).toEqual({ mode: "full", redirect: { to: "/" } });
+  });
+
+  it("leaves the environment's own session in the full UI unless it asks for a face", () => {
+    expect(resolveUiNavigation({ ...base, identity: machine, pathname: "/", search: {} })).toEqual({
+      mode: "full",
+      redirect: null,
+    });
+    expect(
+      resolveUiNavigation({ ...base, identity: machine, pathname: "/", search: { ui: "ops" } }),
+    ).toEqual({ mode: "operator", redirect: { to: "/c" } });
   });
 
   it("shows anyone the customer UI on ?ui=simple, and remembers it", () => {
@@ -154,7 +183,32 @@ describe("isCustomerPath", () => {
   it("matches only the customer routes", () => {
     expect(isCustomerPath("/c")).toBe(true);
     expect(isCustomerPath("/c/env/project")).toBe(true);
+    expect(isCustomerPath("/c/team")).toBe(true);
+    expect(isCustomerPath("/c/docs/env/project")).toBe(true);
     expect(isCustomerPath("/c/thread")).toBe(false);
+    expect(isCustomerPath("/c/env/project/more")).toBe(false);
     expect(isCustomerPath("/chat")).toBe(false);
+  });
+});
+
+describe("resolveUiFace", () => {
+  it("shows the face the stored override and the identity choose", () => {
+    expect(resolveUiFace({ identity: manager, storage: memoryStorage(), dev: false })).toBe(
+      "operator",
+    );
+    const simple = memoryStorage({ "supersteward:ui-mode": "simple" });
+    expect(resolveUiFace({ identity: manager, storage: simple, dev: false })).toBe("customer");
+    const ops = memoryStorage({ "supersteward:ui-mode": "ops" });
+    expect(resolveUiFace({ identity: member, storage: ops, dev: false })).toBe("customer");
+    // The full UI asked to show a /c page gets the customer face, as before.
+    expect(resolveUiFace({ identity: machine, storage: memoryStorage(), dev: false })).toBe(
+      "customer",
+    );
+  });
+
+  it("offers the operator face to everyone but members", () => {
+    expect(canUseOperatorFace(machine)).toBe(true);
+    expect(canUseOperatorFace(manager)).toBe(true);
+    expect(canUseOperatorFace(member)).toBe(false);
   });
 });

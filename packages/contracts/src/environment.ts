@@ -230,6 +230,16 @@ export const ExecutionEnvironmentCapabilities = Schema.Struct({
 export type ExecutionEnvironmentCapabilities = typeof ExecutionEnvironmentCapabilities.Type;
 
 /**
+ * The animated figure clients draw for an employee: a Petdex-format spritesheet (192x208 frames,
+ * 8 columns; version 1 has 9 rows, version 2 has 11). The sheet is linked, never bundled.
+ */
+export const EnvironmentEmployeeCompanion = Schema.Struct({
+  sheetUrl: TrimmedNonEmptyString,
+  version: Schema.optionalKey(Schema.Literals([1, 2])),
+});
+export type EnvironmentEmployeeCompanion = typeof EnvironmentEmployeeCompanion.Type;
+
+/**
  * The agent of this environment as a named member of a team: who clients are handing work to.
  * Set by whoever runs the environment; absent on an ordinary machine.
  */
@@ -242,6 +252,7 @@ export const EnvironmentEmployee = Schema.Struct({
   title: Schema.optionalKey(TrimmedNonEmptyString),
   /** One line on what to bring to this employee. */
   about: Schema.optionalKey(TrimmedNonEmptyString),
+  companion: Schema.optionalKey(EnvironmentEmployeeCompanion),
 });
 export type EnvironmentEmployee = typeof EnvironmentEmployee.Type;
 

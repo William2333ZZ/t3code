@@ -1,22 +1,15 @@
 import type { ScopedThreadRef } from "@t3tools/contracts";
 import { T } from "gt-react";
-import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import ChatMarkdown from "../components/ChatMarkdown";
 import { observeResize } from "../lib/observeResize";
 import { useAssistantMessageText } from "../state/entities";
+import { blockNonWebLinks } from "./customerLinks";
 import { CustomerWorkingLine } from "./CustomerProgressCard";
 import type { CustomerRow } from "./customerTimeline.logic";
 
 const STICK_TO_END_PX = 48;
-
-// Agent replies link to files and threads, which open developer views. Only web links pass.
-function blockNonWebLinks(event: MouseEvent<HTMLDivElement>) {
-  const anchor = event.target instanceof Element ? event.target.closest("a") : null;
-  if (anchor === null || /^https?:\/\//i.test(anchor.getAttribute("href") ?? "")) return;
-  event.preventDefault();
-  event.stopPropagation();
-}
 
 function AssistantRow(props: {
   threadRef: ScopedThreadRef;

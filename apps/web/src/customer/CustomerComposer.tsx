@@ -6,6 +6,8 @@ export function CustomerComposer(props: {
   onSend: (text: string) => Promise<boolean>;
   working: boolean;
   onStop: () => void;
+  /** An operator writing into a customer's conversation. */
+  asFrontDesk?: boolean;
 }) {
   const gt = useGT();
   const [text, setText] = useState("");
@@ -25,15 +27,22 @@ export function CustomerComposer(props: {
   };
 
   return (
-    <div className="flex flex-col gap-2.5 rounded-xl bg-card py-3.5 pr-3.5 pb-2.5 pl-4.5 shadow-(--customer-shadow-card)">
+    <div className="flex flex-col gap-2.5 rounded-2xl bg-card py-3.5 pr-3.5 pb-2.5 pl-4.5 shadow-(--customer-shadow-card)">
+      {props.asFrontDesk ? (
+        <span className="self-start rounded-xl bg-primary px-2.5 text-(length:--customer-note) text-primary-foreground">
+          <T>Reply as the front desk</T>
+        </span>
+      ) : null}
       <textarea
         value={text}
         rows={1}
         aria-label={gt("Message", { $context: "label of the box where a message is typed" })}
         placeholder={
-          props.working
-            ? gt("Add anything that comes to mind, no need to wait")
-            : gt("Say what's off, or what you'd like added")
+          props.asFrontDesk
+            ? gt("The customer sees this in their conversation")
+            : props.working
+              ? gt("Add anything that comes to mind, no need to wait")
+              : gt("Say what's off, or what you'd like added")
         }
         className="field-sizing-content max-h-40 w-full resize-none bg-transparent outline-none placeholder:text-(--placeholder)"
         onChange={(event) => setText(event.target.value)}
@@ -45,7 +54,16 @@ export function CustomerComposer(props: {
         }}
       />
       <div className="flex items-center gap-2">
-        <span className="flex-1" />
+        {props.asFrontDesk ? (
+          <span className="min-w-0 flex-1 text-xs text-(--placeholder)">
+            <T>
+              It goes into the conversation like the customer's own messages, and the assistant
+              answers it.
+            </T>
+          </span>
+        ) : (
+          <span className="flex-1" />
+        )}
         {props.working ? (
           <button
             type="button"

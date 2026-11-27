@@ -20,7 +20,7 @@ export interface CustomerProject {
   readonly updatedAt: string;
 }
 
-function customerStatus(thread: EnvironmentThreadShell): CustomerProjectStatus {
+export function customerStatus(thread: EnvironmentThreadShell): CustomerProjectStatus {
   switch (resolveSidebarThreadStatus(thread)) {
     case "input":
     case "request":
