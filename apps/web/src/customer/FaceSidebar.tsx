@@ -339,6 +339,15 @@ export function FaceSidebar() {
       ) : null}
       <span className="flex-1" />
       {canOperate ? <FaceSwitch /> : null}
+      {canOperate ? (
+        <Link
+          to="/c"
+          search={{ ui: "full" }}
+          className="mt-1.5 px-2.5 py-1 text-(length:--customer-note) text-muted-foreground hover:text-foreground"
+        >
+          <T>Developer view</T>
+        </Link>
+      ) : null}
       <Account collapsed={false} />
     </aside>
   );

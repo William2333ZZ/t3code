@@ -26,7 +26,7 @@ function memoryStorage(initial: Record<string, string> = {}) {
 
 describe("resolveUiMode", () => {
   it.each([
-    { identity: machine, override: null, dev: false, mode: "full" },
+    { identity: machine, override: null, dev: false, mode: "operator" },
     { identity: manager, override: null, dev: false, mode: "operator" },
     { identity: member, override: null, dev: false, mode: "customer" },
     { identity: member, override: null, dev: true, mode: "customer" },
@@ -152,14 +152,14 @@ describe("resolveUiNavigation", () => {
     ).toEqual({ mode: "full", redirect: { to: "/" } });
   });
 
-  it("leaves the environment's own session in the full UI unless it asks for a face", () => {
+  it("opens the environment's own session on the operator face unless it asks for the full UI", () => {
     expect(resolveUiNavigation({ ...base, identity: machine, pathname: "/", search: {} })).toEqual({
-      mode: "full",
-      redirect: null,
+      mode: "operator",
+      redirect: { to: "/c" },
     });
     expect(
-      resolveUiNavigation({ ...base, identity: machine, pathname: "/", search: { ui: "ops" } }),
-    ).toEqual({ mode: "operator", redirect: { to: "/c" } });
+      resolveUiNavigation({ ...base, identity: machine, pathname: "/", search: { ui: "full" } }),
+    ).toEqual({ mode: "full", redirect: null });
   });
 
   it("shows anyone the customer UI on ?ui=simple, and remembers it", () => {
@@ -204,10 +204,14 @@ describe("resolveUiFace", () => {
     expect(resolveUiFace({ identity: member, search: {}, storage: ops, dev: false })).toBe(
       "customer",
     );
-    // The full UI asked to show a /c page gets the customer face, as before.
     expect(
       resolveUiFace({ identity: machine, search: {}, storage: memoryStorage(), dev: false }),
-    ).toBe("customer");
+    ).toBe("operator");
+    // The full UI asked to show a /c page gets the customer face, as before.
+    const full = memoryStorage({ "supersteward:ui-mode": "full" });
+    expect(resolveUiFace({ identity: machine, search: {}, storage: full, dev: false })).toBe(
+      "customer",
+    );
     // Without browser storage the link's own `?ui=` still decides.
     expect(
       resolveUiFace({ identity: manager, search: { ui: "simple" }, storage: null, dev: false }),

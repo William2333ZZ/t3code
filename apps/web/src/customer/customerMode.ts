@@ -13,8 +13,8 @@ const OVERRIDE_STORAGE_KEY = "supersteward:ui-mode";
 type OverrideStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 /**
- * A member (a person without access:write) gets the customer face, a manager the operator face,
- * and the environment's own sessions the full UI. `simple` shows the customer face to anyone;
+ * A member (a person without access:write) gets the customer face; a manager and the environment's
+ * own sessions get the operator face, with the full UI one `?ui=full` away. `simple` shows the customer face to anyone;
  * `ops` and `full` are honoured only for someone who is not a member, or in a dev build. This
  * picks a UI, it is not a permission: the server decides what a session may read and do.
  */
@@ -28,8 +28,7 @@ export function resolveUiMode(input: {
   if (member && !input.dev) return "customer";
   if (input.override === "ops") return "operator";
   if (input.override === "full") return "full";
-  if (member) return "customer";
-  return input.identity === undefined ? "full" : "operator";
+  return member ? "customer" : "operator";
 }
 
 /** Whether this session may look at the operator face at all; members may not. */
